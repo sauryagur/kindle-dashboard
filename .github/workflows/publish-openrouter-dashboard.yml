@@ -1,0 +1,49 @@
+name: Publish OpenRouter dashboard
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openrouter-dashboard-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install image converter
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends imagemagick
+      - name: Fetch usage and render SVG
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DASHBOARD_SVG: out/openrouter-dashboard.svg
+        run: node scripts/generate-openrouter-dashboard.js
+      - name: Convert SVG to PNG
+        run: convert -background white out/openrouter-dashboard.svg -strip out/openrouter-dashboard.png
+      - name: Verify image dimensions
+        run: test "$(identify -format '%wx%h' out/openrouter-dashboard.png)" = '1072x1448'
+      - name: Publish to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          DASHBOARD_BUCKET: ${{ secrets.DASHBOARD_BUCKET }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+        run: |
+          if [ -n "${S3_ENDPOINT_URL:-}" ]; then
+            aws s3 cp out/openrouter-dashboard.png "s3://${DASHBOARD_BUCKET}/openrouter-dashboard.png" \
+              --endpoint-url "$S3_ENDPOINT_URL" --content-type image/png --cache-control no-cache
+          else
+            aws s3 cp out/openrouter-dashboard.png "s3://${DASHBOARD_BUCKET}/openrouter-dashboard.png" \
+              --content-type image/png --cache-control no-cache
+          fi
