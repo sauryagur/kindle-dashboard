@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 22
       - name: Install image converter
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends imagemagick
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends imagemagick librsvg2-bin
       - name: Fetch usage and render SVG
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
