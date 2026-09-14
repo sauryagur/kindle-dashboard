@@ -1,13 +1,13 @@
 import { promises as fs } from 'node:fs'
 import { dirname } from 'node:path'
-import { app, safeStorage } from 'electron'
+import { safeStorage } from 'electron'
 import type { DashboardConfig, LanguagePreference } from '../shared/types'
 import { positiveInt } from './constants'
 import { applyLanguagePreference, normalizeLanguagePreference, text } from './i18n'
-import { configPath, defaultDashboardUrl } from './paths'
+import { configPath } from './paths'
 
 export interface StoredDashboardConfig {
-  dashboardUrl: string
+  imageUrl: string
   language: LanguagePreference
   kindleFullRefreshEvery: number
   kindleIp: string
@@ -18,18 +18,7 @@ export interface StoredDashboardConfig {
   kindleRefreshInterval: number
   kindleUser: string
   kindleWifiRetryEvery: number
-  pictureInPicture: boolean
-  pictureInPictureScale: number
   setupComplete: boolean
-}
-
-// Multiplicadores de tamanho oferecidos na UI para a janela PiP.
-export const PIP_SCALES = [1, 1.25, 1.5, 1.75, 2]
-const DEFAULT_PIP_SCALE = 1.5
-
-function normalizePipScale(raw: unknown): number {
-  const value = typeof raw === 'number' ? raw : Number.parseFloat(String(raw ?? ''))
-  return PIP_SCALES.includes(value) ? value : DEFAULT_PIP_SCALE
 }
 
 let dashboardConfig: StoredDashboardConfig | null = null
@@ -40,16 +29,14 @@ export function currentConfig(): StoredDashboardConfig | null {
 
 function defaultStoredConfig(): StoredDashboardConfig {
   return {
-    dashboardUrl: defaultDashboardUrl(),
+    imageUrl: '',
     language: 'system',
-    kindleFullRefreshEvery: 20,
+    kindleFullRefreshEvery: 1,
     kindleIp: '',
     kindlePort: 22,
-    kindleRefreshInterval: 45,
+    kindleRefreshInterval: 21600,
     kindleUser: '',
     kindleWifiRetryEvery: 3,
-    pictureInPicture: false,
-    pictureInPictureScale: DEFAULT_PIP_SCALE,
     setupComplete: false,
   }
 }
@@ -83,7 +70,7 @@ function hasSavedPassword(config: StoredDashboardConfig): boolean {
 
 export function publicConfig(config: StoredDashboardConfig): DashboardConfig {
   return {
-    dashboardUrl: config.dashboardUrl,
+    imageUrl: config.imageUrl,
     kindleFullRefreshEvery: config.kindleFullRefreshEvery,
     kindleIp: config.kindleIp,
     kindlePasswordSaved: hasSavedPassword(config),
@@ -92,8 +79,6 @@ export function publicConfig(config: StoredDashboardConfig): DashboardConfig {
     kindleUser: config.kindleUser,
     kindleWifiRetryEvery: config.kindleWifiRetryEvery,
     language: config.language,
-    pictureInPicture: config.pictureInPicture,
-    pictureInPictureScale: config.pictureInPictureScale,
     setupComplete: config.setupComplete,
   }
 }
@@ -106,7 +91,7 @@ export async function loadConfig(): Promise<StoredDashboardConfig> {
     const raw = JSON.parse(await fs.readFile(configPath(), 'utf8')) as Partial<StoredDashboardConfig>
     dashboardConfig = {
       ...defaults,
-      dashboardUrl: typeof raw.dashboardUrl === 'string' ? raw.dashboardUrl : defaults.dashboardUrl,
+      imageUrl: typeof raw.imageUrl === 'string' ? raw.imageUrl : defaults.imageUrl,
       language: normalizeLanguagePreference(raw.language),
       kindleFullRefreshEvery: positiveInt(String(raw.kindleFullRefreshEvery ?? ''), defaults.kindleFullRefreshEvery),
       kindleIp: typeof raw.kindleIp === 'string' ? raw.kindleIp : defaults.kindleIp,
@@ -117,9 +102,7 @@ export async function loadConfig(): Promise<StoredDashboardConfig> {
       kindleRefreshInterval: positiveInt(String(raw.kindleRefreshInterval ?? ''), defaults.kindleRefreshInterval),
       kindleUser: typeof raw.kindleUser === 'string' ? raw.kindleUser : defaults.kindleUser,
       kindleWifiRetryEvery: positiveInt(String(raw.kindleWifiRetryEvery ?? ''), defaults.kindleWifiRetryEvery),
-      pictureInPicture: raw.pictureInPicture === true,
-      pictureInPictureScale: normalizePipScale(raw.pictureInPictureScale),
-      setupComplete: raw.setupComplete === true,
+      setupComplete: raw.setupComplete === true && typeof raw.imageUrl === 'string',
     }
   } catch {
     dashboardConfig = defaults
@@ -156,12 +139,14 @@ function numberField(input: Record<string, unknown>, key: string, fallback: numb
   return value
 }
 
-function normalizedDashboardUrl(value: string): string {
-  const url = new URL(value)
-  if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error(text('dashboardUrlProtocol'))
+function normalizedImageUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    if (url.protocol === 'https:') return url.toString()
+  } catch {
+    // Fall through to the localized protocol error.
   }
-  return url.toString()
+  throw new Error(text('imageUrlProtocol'))
 }
 
 export async function saveConfig(raw: unknown): Promise<DashboardConfig> {
@@ -170,7 +155,7 @@ export async function saveConfig(raw: unknown): Promise<DashboardConfig> {
   const password = typeof input.kindlePassword === 'string' ? input.kindlePassword : ''
   const next: StoredDashboardConfig = {
     ...previous,
-    dashboardUrl: normalizedDashboardUrl(requiredString(input, 'dashboardUrl', 500)),
+    imageUrl: normalizedImageUrl(requiredString(input, 'imageUrl', 500)),
     kindleFullRefreshEvery: numberField(input, 'kindleFullRefreshEvery', previous.kindleFullRefreshEvery, 1000),
     kindleIp: requiredString(input, 'kindleIp', 255),
     kindlePort: numberField(input, 'kindlePort', previous.kindlePort),
@@ -193,25 +178,5 @@ export async function setLanguage(raw: unknown): Promise<DashboardConfig> {
   }
   await writeConfig(next)
   applyLanguagePreference(next.language)
-  return publicConfig(next)
-}
-
-export async function setPictureInPicture(enabled: unknown): Promise<DashboardConfig> {
-  const previous = await loadConfig()
-  const next: StoredDashboardConfig = {
-    ...previous,
-    pictureInPicture: enabled === true,
-  }
-  await writeConfig(next)
-  return publicConfig(next)
-}
-
-export async function setPictureInPictureScale(scale: unknown): Promise<DashboardConfig> {
-  const previous = await loadConfig()
-  const next: StoredDashboardConfig = {
-    ...previous,
-    pictureInPictureScale: normalizePipScale(scale),
-  }
-  await writeConfig(next)
   return publicConfig(next)
 }

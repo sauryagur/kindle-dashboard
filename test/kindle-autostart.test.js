@@ -1,39 +1,37 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const {
-  dashboardUrl,
+  imageUrl,
   environmentContents,
   parseStatus,
   positiveInt,
 } = require('../scripts/kindle-autostart');
 
-test('dashboardUrl accepts HTTP endpoints and rejects unsafe protocols', () => {
+test('imageUrl accepts stable HTTPS object URLs and rejects unsafe protocols', () => {
   assert.equal(
-    dashboardUrl('http://dashboard.local:8787/dash.png'),
-    'http://dashboard.local:8787/dash.png',
+    imageUrl('https://r2.example.com/openrouter-dashboard.png'),
+    'https://r2.example.com/openrouter-dashboard.png',
   );
-  assert.throws(() => dashboardUrl('file:///mnt/us/dash.png'), /http or https/);
-  assert.throws(() => dashboardUrl(''), /required/);
+  assert.throws(() => imageUrl('http://r2.example.com/openrouter-dashboard.png'), /https/);
+  assert.throws(() => imageUrl('file:///mnt/us/dash.png'), /https/);
+  assert.throws(() => imageUrl(''), /required/);
 });
 
 test('positiveInt falls back for invalid Kindle intervals', () => {
-  assert.equal(positiveInt('30', 45), 30);
-  assert.equal(positiveInt('0', 45), 45);
-  assert.equal(positiveInt('invalid', 45), 45);
+  assert.equal(positiveInt('30', 21600), 30);
+  assert.equal(positiveInt('0', 21600), 21600);
+  assert.equal(positiveInt('invalid', 21600), 21600);
 });
 
 test('environmentContents safely quotes the generated Kindle configuration', () => {
   const contents = environmentContents({
-    DASHBOARD_URL: 'http://dashboard.local:8787/dash.png',
-    KINDLE_REFRESH_INTERVAL: '30',
-    KINDLE_FULL_REFRESH_EVERY: '10',
-    KINDLE_WIFI_RETRY_EVERY: '4',
+    IMAGE_URL: 'https://r2.example.com/openrouter-dashboard.png',
   });
 
-  assert.match(contents, /^PC='http:\/\/dashboard\.local:8787\/dash\.png'$/m);
-  assert.match(contents, /^INTERVAL='30'$/m);
-  assert.match(contents, /^FULL_EVERY='10'$/m);
-  assert.match(contents, /^WIFI_RETRY_EVERY='4'$/m);
+  assert.match(contents, /^IMAGE_URL='https:\/\/r2\.example\.com\/openrouter-dashboard\.png'$/m);
+  assert.match(contents, /^INTERVAL='21600'$/m);
+  assert.match(contents, /^FULL_EVERY='1'$/m);
+  assert.match(contents, /^WIFI_RETRY_EVERY='3'$/m);
 });
 
 test('parseStatus returns public state from Kindle status output', () => {
@@ -42,11 +40,11 @@ test('parseStatus returns public state from Kindle status output', () => {
     'Enabled   : yes',
     'Upstart   : kindle-dashboard stop/waiting',
     'Loop      : running (pid 123)',
-    'Backend   : reachable',
+    'Image     : reachable',
   ].join('\n');
 
   assert.deepEqual(parseStatus(output), {
-    backendReachable: true,
+    imageReachable: true,
     enabled: true,
     installed: true,
     output,
@@ -59,12 +57,12 @@ test('parseStatus reports stopped and unavailable scripts', () => {
     'Autostart : not installed',
     'Enabled   : n/a',
     'Loop      : stopped',
-    'Backend   : unavailable',
+    'Image     : unavailable',
   ].join('\n');
 
   const status = parseStatus(output);
   assert.equal(status.installed, false);
   assert.equal(status.enabled, false);
   assert.equal(status.running, false);
-  assert.equal(status.backendReachable, false);
+  assert.equal(status.imageReachable, false);
 });

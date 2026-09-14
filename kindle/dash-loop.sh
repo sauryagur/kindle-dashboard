@@ -1,27 +1,27 @@
 #!/bin/sh
-# Token Dashboard — loop no Kindle (Fase 5).
-# Baixa o PNG do backend e exibe via fbink, mantendo a tela ligada.
-# Roda no aparelho; o PC só serve o PNG. Sobrevive à queda do SSH.
+# Kindle cloud image fetch loop.
+# Downloads a stable HTTPS image and displays it through FBInk.
+# Runs on device; survives SSH disconnects.
 #
 # Parar:  touch /mnt/us/dash-loop.stop   (ou matar o processo)
 # Log:    /mnt/us/dash-loop.log
 
-PC="${PC:-}"
+IMAGE_URL="${IMAGE_URL:-}"
 IMG=/mnt/us/dash.png
-INTERVAL="${INTERVAL:-45}"     # segundos entre atualizações
-FULL_EVERY="${FULL_EVERY:-20}" # full-refresh (flash anti-ghosting) a cada N ciclos
-WIFI_RETRY_EVERY="${WIFI_RETRY_EVERY:-3}" # tenta recuperar WiFi após N falhas seguidas
+INTERVAL="${INTERVAL:-21600}"  # seconds between published-image checks
+FULL_EVERY="${FULL_EVERY:-1}"  # full refresh after every successful update
+WIFI_RETRY_EVERY="${WIFI_RETRY_EVERY:-3}" # recover Wi-Fi after N consecutive failures
 MAX_FAILURES="${MAX_FAILURES:-6}" # para o script após N falhas consecutivas (0 = sem limite)
 STOP=/mnt/us/dash-loop.stop
 PIDFILE=/mnt/us/dash-loop.pid
 FBINK=/usr/bin/fbink
 
-case "$INTERVAL" in ''|*[!0-9]*) INTERVAL=45;; esac
-case "$FULL_EVERY" in ''|*[!0-9]*|0) FULL_EVERY=20;; esac
+case "$INTERVAL" in ''|*[!0-9]*) INTERVAL=21600;; esac
+case "$FULL_EVERY" in ''|*[!0-9]*|0) FULL_EVERY=1;; esac
 case "$WIFI_RETRY_EVERY" in ''|*[!0-9]*|0) WIFI_RETRY_EVERY=3;; esac
 case "$MAX_FAILURES" in ''|*[!0-9]*) MAX_FAILURES=6;; esac
-if [ -z "$PC" ]; then
-  echo "[dash-loop] PC is required. Set PC to http://<PC_IP>:<PORT>/dash.png"
+if [ -z "$IMAGE_URL" ]; then
+  echo "[dash-loop] IMAGE_URL is required. Set it to a stable HTTPS cloud image URL"
   exit 2
 fi
 
@@ -49,13 +49,13 @@ reconnect_wifi() {
 rm -f "$STOP"
 i=0
 failures=0
-echo "[dash-loop] start $(date) pid=$$ PC=$PC interval=${INTERVAL}s"
+echo "[dash-loop] start $(date) pid=$$ image=$IMAGE_URL interval=${INTERVAL}s"
 
 while [ ! -f "$STOP" ]; do
   # mantém a tela acesa (powerd reseta às vezes, então reforça todo ciclo)
   lipc-set-prop com.lab126.powerd preventScreenSaver 1 2>/dev/null
 
-  if curl -fsS --connect-timeout 10 --max-time 30 "$PC" -o "$IMG.tmp" 2>/dev/null && [ -s "$IMG.tmp" ]; then
+  if curl -fsS --connect-timeout 10 --max-time 30 "$IMAGE_URL" -o "$IMG.tmp" 2>/dev/null && [ -s "$IMG.tmp" ]; then
     mv "$IMG.tmp" "$IMG"
     failures=0
     if [ $((i % FULL_EVERY)) -eq 0 ]; then

@@ -1,454 +1,211 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createTranslator } from './i18n'
 import { formFromConfig, inputFromForm, resolveLanguage } from './lib/format'
-import type {
-  BackendState,
-  ConfigForm,
-  KindleScriptAction,
-  KindleTab,
-  NavItem,
-  NavKey,
-} from './types'
+import type { ConfigForm, KindleScriptAction, KindleTab, NavItem, NavKey } from './types'
 import { KindleView } from './views/KindleView'
-import { LoginsView } from './views/LoginsView'
-import { PanelView } from './views/PanelView'
 import { SettingsView } from './views/SettingsView'
 import { Sidebar } from './views/Sidebar'
 import { Topbar } from './views/Topbar'
 import type {
-  AuthLoginTool,
-  AuthStatus,
+  AppInfo,
   DashboardConfig,
   KindleScriptStatus,
   KindleStatus,
   LanguagePreference,
-  RenderResult,
-  RuntimeInfo,
 } from '../../shared/types'
 
 export default function App(): React.JSX.Element {
-  const [runtime, setRuntime] = useState<RuntimeInfo | null>(null)
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
   const [config, setConfig] = useState<DashboardConfig | null>(null)
   const [form, setForm] = useState<ConfigForm | null>(null)
-  const [auth, setAuth] = useState<AuthStatus | null>(null)
   const [kindle, setKindle] = useState<KindleStatus | null>(null)
   const [kindleScript, setKindleScript] = useState<KindleScriptStatus | null>(null)
-  const [backendState, setBackendState] = useState<BackendState>('checking')
-  const [lastRender, setLastRender] = useState<string | null>(null)
-  const [nav, setNav] = useState<NavKey>('configuracoes')
+  const [nav, setNav] = useState<NavKey>('kindle')
   const [kindleTab, setKindleTab] = useState<KindleTab>('config')
-  const [rendering, setRendering] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [savingLanguage, setSavingLanguage] = useState(false)
-  const [savingPip, setSavingPip] = useState(false)
-  const [savingPipScale, setSavingPipScale] = useState(false)
-  const [checkingAuth, setCheckingAuth] = useState(false)
   const [checkingKindle, setCheckingKindle] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [uninstalling, setUninstalling] = useState(false)
   const [scriptAction, setScriptAction] = useState<KindleScriptAction | null>(null)
-  const [previewKey, setPreviewKey] = useState(0)
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [noticeNav, setNoticeNav] = useState<NavKey | null>(null)
   const [installOutput, setInstallOutput] = useState<string | null>(null)
 
-  const configured = config?.setupComplete === true
-  const activeLanguage = resolveLanguage(config?.language, runtime?.systemLanguage)
-  const t = useMemo(() => createTranslator(activeLanguage), [activeLanguage])
+  const language = resolveLanguage(config?.language, appInfo?.systemLanguage)
+  const t = useMemo(() => createTranslator(language), [language])
+  const configured = Boolean(config?.setupComplete)
+  const navItems = useMemo<NavItem[]>(() => [
+    { key: 'kindle', label: t('navKindle'), hint: t('navKindleHint'), icon: 'kindle' },
+    { key: 'configuracoes', label: t('navSettings'), hint: t('navSettingsHint'), icon: 'settings' },
+  ], [t])
+  const activeNav = navItems.find((item) => item.key === nav) ?? navItems[0]
 
-  const checkBackend = useCallback(async (baseUrl: string) => {
-    try {
-      const response = await fetch(`${baseUrl}/api/ping`, { cache: 'no-store' })
-      setBackendState(response.ok ? 'online' : 'offline')
-    } catch {
-      setBackendState('offline')
-    }
+  const applyConfig = useCallback((next: DashboardConfig) => {
+    setConfig(next)
+    setForm(formFromConfig(next))
   }, [])
 
-  const refreshAuth = useCallback(async () => {
-    setCheckingAuth(true)
-    try {
-      const status = await window.dashboard.checkAuth()
-      setAuth(status)
-      return status
-    } catch (authError) {
-      showError('logins', authError instanceof Error ? authError.message : String(authError))
-      return null
-    } finally {
-      setCheckingAuth(false)
-    }
+  const showError = useCallback((message: unknown) => {
+    setError(message instanceof Error ? message.message : String(message))
+  }, [])
+
+  const refreshScriptStatus = useCallback(async () => {
+    const status = await window.dashboard.getKindleScriptStatus()
+    setKindleScript(status)
+    return status
   }, [])
 
   useEffect(() => {
-    let timer: number | undefined
-    let unsubscribeRender = (): void => {}
-    let unsubscribeSettings = (): void => {}
-    let unsubscribePanel = (): void => {}
-    let unsubscribePip = (): void => {}
-
-    async function hydrate(): Promise<void> {
-      try {
-        const [runtimeInfo, savedConfig, authStatus] = await Promise.all([
-          window.dashboard.getRuntimeInfo(),
-          window.dashboard.getConfig(),
-          window.dashboard.checkAuth(),
-        ])
-
-        setRuntime(runtimeInfo)
-        setConfig(savedConfig)
-        setForm(formFromConfig(savedConfig))
-        setAuth(authStatus)
-        setNav(savedConfig.setupComplete ? 'painel' : 'configuracoes')
-        setLastRender(runtimeInfo.lastRender?.updatedAt ?? null)
-        if (runtimeInfo.lastRender) setPreviewKey(Date.parse(runtimeInfo.lastRender.updatedAt) || Date.now())
-        void checkBackend(runtimeInfo.baseUrl)
-        timer = window.setInterval(() => void checkBackend(runtimeInfo.baseUrl), 5000)
-      } catch (hydrateError) {
-        setBackendState('offline')
-        showError('configuracoes', hydrateError instanceof Error ? hydrateError.message : String(hydrateError))
-      }
-    }
-
-    void hydrate()
-
-    unsubscribeRender = window.dashboard.onRenderCompleted((result: RenderResult) => {
-      setLastRender(result.updatedAt)
-      setPreviewKey(Date.now())
-      if (noticeNav === 'painel') clearNotice('painel')
-    })
-    unsubscribeSettings = window.dashboard.onOpenSettings(() => {
+    let active = true
+    void Promise.all([window.dashboard.getAppInfo(), window.dashboard.getConfig()])
+      .then(([info, saved]) => {
+        if (!active) return
+        setAppInfo(info)
+        applyConfig(saved)
+      })
+      .catch(showError)
+    const offKindle = window.dashboard.onOpenKindle(() => {
       setNav('kindle')
       setKindleTab('config')
     })
-    unsubscribePanel = window.dashboard.onOpenPanel(() => {
-      setNav(configured ? 'painel' : 'configuracoes')
-    })
-    unsubscribePip = window.dashboard.onPipChanged((enabled) => {
-      setConfig((current) => current ? { ...current, pictureInPicture: enabled } : current)
-    })
-
+    const offSettings = window.dashboard.onOpenSettings(() => setNav('configuracoes'))
     return () => {
-      if (timer) window.clearInterval(timer)
-      unsubscribeRender()
-      unsubscribeSettings()
-      unsubscribePanel()
-      unsubscribePip()
+      active = false
+      offKindle()
+      offSettings()
     }
-  }, [checkBackend, configured])
+  }, [applyConfig, showError])
 
-  const dashboardUrlPreview = useMemo(() => {
-    if (!form?.dashboardUrl) return ''
-    try {
-      return new URL(form.dashboardUrl).toString()
-    } catch {
-      return form.dashboardUrl
-    }
-  }, [form?.dashboardUrl])
-
-  const backendPill = useMemo(() => {
-    if (backendState === 'offline') return { className: 'offline', label: t('backendOffline') }
-    if (backendState === 'online' && !configured) return { className: 'pending', label: t('backendPending') }
-    if (backendState === 'online') return { className: 'online', label: t('backendOnline') }
-    return { className: 'checking', label: t('backendChecking') }
-  }, [backendState, configured, t])
-
-  const navItems = useMemo<NavItem[]>(() => [
-    { key: 'painel', label: t('menuDashboard'), hint: t('hintDashboard'), icon: 'book' },
-    { key: 'kindle', label: t('menuKindle'), hint: t('hintKindle'), icon: 'kindle' },
-    { key: 'logins', label: t('menuLogins'), hint: t('hintLogins'), icon: 'login' },
-    { key: 'configuracoes', label: t('menuSettings'), hint: t('hintSettings'), icon: 'settings' },
-  ], [t])
-
-  const activeNav = navItems.find((item) => item.key === nav) ?? navItems[0]
-
-  function showMessage(nextNav: NavKey, value: string): void {
-    setNoticeNav(nextNav)
-    setMessage(value)
-    setError(null)
-  }
-
-  function showError(nextNav: NavKey, value: string): void {
-    setNoticeNav(nextNav)
-    setError(value)
-    setMessage(null)
-  }
-
-  function clearNotice(nextNav?: NavKey): void {
-    setNoticeNav(nextNav ?? null)
-    setMessage(null)
-    setError(null)
-  }
-
-  function updateForm(key: keyof ConfigForm, value: string): void {
+  const updateForm = useCallback((key: keyof ConfigForm, value: string) => {
     setForm((current) => current ? { ...current, [key]: value } : current)
-  }
+  }, [])
 
-  async function saveCurrentConfig(): Promise<DashboardConfig | null> {
-    if (!form) return null
-
+  const save = useCallback(async () => {
+    if (!form) return
     setSaving(true)
-    clearNotice('kindle')
+    setError(null)
     try {
-      const saved = await window.dashboard.saveConfig(inputFromForm(form))
-      setConfig(saved)
-      setForm(formFromConfig(saved))
-      showMessage('kindle', t('configSaved'))
-      return saved
+      applyConfig(await window.dashboard.saveConfig(inputFromForm(form)))
     } catch (saveError) {
-      showError('kindle', saveError instanceof Error ? saveError.message : String(saveError))
-      return null
+      showError(saveError)
     } finally {
       setSaving(false)
     }
-  }
+  }, [applyConfig, form, showError])
 
-  async function handleSaveLanguage(language: LanguagePreference): Promise<void> {
-    setSavingLanguage(true)
-    clearNotice('configuracoes')
-    try {
-      const saved = await window.dashboard.setLanguage(language)
-      setConfig(saved)
-      const savedTranslator = createTranslator(resolveLanguage(saved.language, runtime?.systemLanguage))
-      showMessage('configuracoes', savedTranslator('languageSaved'))
-    } catch (languageError) {
-      showError('configuracoes', languageError instanceof Error ? languageError.message : String(languageError))
-    } finally {
-      setSavingLanguage(false)
-    }
-  }
-
-  async function handleTogglePictureInPicture(enabled: boolean): Promise<void> {
-    setSavingPip(true)
-    clearNotice('configuracoes')
-    try {
-      const saved = await window.dashboard.setPictureInPicture(enabled)
-      setConfig(saved)
-      showMessage('configuracoes', saved.pictureInPicture ? t('pipEnabled') : t('pipDisabled'))
-    } catch (pipError) {
-      showError('configuracoes', pipError instanceof Error ? pipError.message : String(pipError))
-    } finally {
-      setSavingPip(false)
-    }
-  }
-
-  async function handleChangePipScale(scale: number): Promise<void> {
-    setSavingPipScale(true)
-    clearNotice('configuracoes')
-    try {
-      const saved = await window.dashboard.setPictureInPictureScale(scale)
-      setConfig(saved)
-      showMessage('configuracoes', t('pipScaleSaved'))
-    } catch (pipScaleError) {
-      showError('configuracoes', pipScaleError instanceof Error ? pipScaleError.message : String(pipScaleError))
-    } finally {
-      setSavingPipScale(false)
-    }
-  }
-
-  async function handleCheckKindle(): Promise<void> {
-    const saved = await saveCurrentConfig()
-    if (!saved) return
-
+  const check = useCallback(async () => {
     setCheckingKindle(true)
-    clearNotice('kindle')
+    setError(null)
     try {
-      const status = await window.dashboard.checkKindle()
-      setKindle(status)
-      showMessage('kindle', status.detail)
-      if (status.connected) {
-        const scriptStatus = await window.dashboard.getKindleScriptStatus()
-        setKindleScript(scriptStatus)
-        setInstallOutput(scriptStatus.output)
-      }
-      setNav('kindle')
-    } catch (kindleError) {
-      showError('kindle', kindleError instanceof Error ? kindleError.message : String(kindleError))
+      setKindle(await window.dashboard.checkKindle())
+      await refreshScriptStatus().catch(() => undefined)
+    } catch (checkError) {
+      showError(checkError)
     } finally {
       setCheckingKindle(false)
     }
-  }
+  }, [refreshScriptStatus, showError])
 
-  async function handleInstallKindle(): Promise<void> {
-    const saved = await saveCurrentConfig()
-    if (!saved) return
-
+  const install = useCallback(async () => {
     setInstalling(true)
-    clearNotice('kindle')
-    setInstallOutput(null)
+    setError(null)
     try {
       const result = await window.dashboard.installKindle()
-      setConfig(result.config)
-      setForm(formFromConfig(result.config))
+      applyConfig(result.config)
       setInstallOutput(result.output)
       setKindleScript(result.status)
-      showMessage('kindle', t('scriptsInstalled'))
-      setNav('painel')
-      await refreshAuth()
+      setKindleTab('diagnostico')
     } catch (installError) {
-      showError('kindle', installError instanceof Error ? installError.message : String(installError))
+      showError(installError)
     } finally {
       setInstalling(false)
     }
-  }
+  }, [applyConfig, showError])
 
-  async function handleUninstallKindle(): Promise<void> {
-    const confirmed = window.confirm(t('uninstallConfirm'))
-    if (!confirmed) return
-
-    const saved = await saveCurrentConfig()
-    if (!saved) return
-
+  const uninstall = useCallback(async () => {
     setUninstalling(true)
-    clearNotice('kindle')
-    setInstallOutput(null)
+    setError(null)
     try {
       const result = await window.dashboard.uninstallKindle()
-      setConfig(result.config)
-      setForm(formFromConfig(result.config))
+      applyConfig(result.config)
       setInstallOutput(result.output)
       setKindleScript(result.status)
-      showMessage('kindle', t('scriptsRemoved'))
     } catch (uninstallError) {
-      showError('kindle', uninstallError instanceof Error ? uninstallError.message : String(uninstallError))
+      showError(uninstallError)
     } finally {
       setUninstalling(false)
     }
-  }
+  }, [applyConfig, showError])
 
-  async function handleKindleScript(action: KindleScriptAction): Promise<void> {
+  const manageScript = useCallback(async (action: KindleScriptAction) => {
     setScriptAction(action)
-    clearNotice('kindle')
+    setError(null)
     try {
-      const status = action === 'start'
+      setKindleScript(action === 'start'
         ? await window.dashboard.startKindleScript()
-        : await window.dashboard.stopKindleScript()
-      setKindleScript(status)
-      setInstallOutput(status.output)
-      showMessage('kindle', action === 'start' ? t('scriptStarted') : t('scriptStopped'))
+        : await window.dashboard.stopKindleScript())
     } catch (scriptError) {
-      showError('kindle', scriptError instanceof Error ? scriptError.message : String(scriptError))
+      showError(scriptError)
     } finally {
       setScriptAction(null)
     }
-  }
+  }, [showError])
 
-  async function handleRender(): Promise<void> {
-    setRendering(true)
-    clearNotice('painel')
+  const setLanguage = useCallback(async (preference: LanguagePreference) => {
+    setError(null)
     try {
-      const result = await window.dashboard.renderNow()
-      setLastRender(result.updatedAt)
-      setPreviewKey(Date.now())
-    } catch (renderError) {
-      showError('painel', renderError instanceof Error ? renderError.message : String(renderError))
-    } finally {
-      setRendering(false)
+      applyConfig(await window.dashboard.setLanguage(preference))
+    } catch (languageError) {
+      showError(languageError)
     }
-  }
-
-  async function handleOpenLogin(tool: AuthLoginTool): Promise<void> {
-    clearNotice('logins')
-    try {
-      await window.dashboard.openLogin(tool)
-      showMessage('logins', tool === 'claude' ? t('sourceLoginOpenedClaude') : t('sourceLoginOpenedCodex'))
-    } catch (loginError) {
-      showError('logins', loginError instanceof Error ? loginError.message : String(loginError))
-    }
-  }
+  }, [applyConfig, showError])
 
   return (
     <div className="app-shell">
       <Sidebar
-        appCommit={runtime?.appCommit}
-        appVersion={runtime?.appVersion}
-        backendPill={backendPill}
+        appCommit={appInfo?.appCommit}
+        appVersion={appInfo?.appVersion}
         nav={nav}
         navItems={navItems}
         onNav={setNav}
         onOpenRepo={() => void window.dashboard.openRepo()}
         t={t}
       />
-
-      <div className="main">
-        <Topbar
-          activeNav={activeNav}
-          canRender={Boolean(runtime)}
-          language={activeLanguage}
-          lastRender={lastRender}
-          nav={nav}
-          onRender={() => void handleRender()}
-          rendering={rendering}
-          t={t}
-        />
-
-        <main className="content">
-          {(message || error) && noticeNav === nav ? (
-            <section className="global-notices">
-              {message ? <div className="notice ok">{message}</div> : null}
-              {error ? <div className="notice error">{error}</div> : null}
-            </section>
-          ) : null}
-
-          {nav === 'painel' ? (
-            <PanelView baseUrl={runtime?.baseUrl} language={activeLanguage} previewKey={previewKey} t={t} />
-          ) : null}
-
-          {nav === 'configuracoes' ? (
-            <SettingsView
-              disabled={!config}
-              languagePreference={config?.language ?? 'system'}
-              onChangeLanguage={(language) => void handleSaveLanguage(language)}
-              onChangePictureInPictureScale={(scale) => void handleChangePipScale(scale)}
-              onTogglePictureInPicture={(enabled) => void handleTogglePictureInPicture(enabled)}
-              pictureInPicture={config?.pictureInPicture ?? false}
-              pictureInPictureScale={config?.pictureInPictureScale ?? 1.5}
-              saving={savingLanguage}
-              savingPip={savingPip}
-              savingPipScale={savingPipScale}
-              systemLanguage={runtime?.systemLanguage}
-              t={t}
-            />
-          ) : null}
-
-          {nav === 'kindle' ? (
-            <KindleView
-              checkingKindle={checkingKindle}
-              config={config}
-              configured={configured}
-              dashboardUrlPreview={dashboardUrlPreview}
-              form={form}
-              installOutput={installOutput}
-              installing={installing}
-              kindle={kindle}
-              kindleScript={kindleScript}
-              kindleTab={kindleTab}
-              onCheckKindle={() => void handleCheckKindle()}
-              onInstall={() => void handleInstallKindle()}
-              onKindleTab={setKindleTab}
-              onScript={(action) => void handleKindleScript(action)}
-              onSubmitConfig={() => void saveCurrentConfig()}
-              onUninstall={() => void handleUninstallKindle()}
-              onUpdateForm={updateForm}
-              saving={saving}
-              scriptAction={scriptAction}
-              t={t}
-              uninstalling={uninstalling}
-            />
-          ) : null}
-
-          {nav === 'logins' ? (
-            <LoginsView
-              checking={checkingAuth}
-              language={activeLanguage}
-              onLogin={(tool) => void handleOpenLogin(tool)}
-              onRecheck={() => void refreshAuth()}
-              sources={auth?.sources}
-              t={t}
-            />
-          ) : null}
-        </main>
-      </div>
+      <main className="content">
+        <Topbar activeNav={activeNav} />
+        {error ? <p className="error-banner">{error}</p> : null}
+        {nav === 'kindle' ? (
+          <KindleView
+            checkingKindle={checkingKindle}
+            config={config}
+            configured={configured}
+            form={form}
+            installOutput={installOutput}
+            installing={installing}
+            kindle={kindle}
+            kindleScript={kindleScript}
+            kindleTab={kindleTab}
+            onCheckKindle={() => void check()}
+            onInstall={() => void install()}
+            onKindleTab={setKindleTab}
+            onScript={(action) => void manageScript(action)}
+            onSubmitConfig={() => void save()}
+            onUninstall={() => void uninstall()}
+            onUpdateForm={updateForm}
+            saving={saving}
+            scriptAction={scriptAction}
+            t={t}
+            uninstalling={uninstalling}
+          />
+        ) : (
+          <SettingsView
+            disabled={!config}
+            languagePreference={config?.language ?? 'system'}
+            onChangeLanguage={(preference) => void setLanguage(preference)}
+            systemLanguage={appInfo?.systemLanguage}
+            t={t}
+          />
+        )}
+      </main>
     </div>
   )
 }

@@ -17,16 +17,10 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
-    "backend": "node backend/server.js",
-    "supervisor": "node scripts/supervisor.js",
     "kindle": "node scripts/kssh.js",
     "kindle:autostart": "node scripts/kindle-autostart.js",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage",
-    "autostart:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-autostart.ps1 Install",
-    "autostart:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-autostart.ps1 Status",
-    "autostart:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-autostart.ps1 Stop",
-    "autostart:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-autostart.ps1 Uninstall"
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "dependencies": {
     "react": "^19.2.7",

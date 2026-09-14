@@ -4,14 +4,10 @@ import { app } from 'electron'
 import type { LanguagePreference, SupportedLanguage } from '../shared/types'
 
 interface LocaleMeta {
-  currency: string
-  locale: string
   name: string
 }
 
 interface LocaleData {
-  auth?: Record<string, string>
-  dashboard?: Record<string, string>
   main?: Record<string, string>
   meta?: LocaleMeta
   ui?: Record<string, string>
@@ -46,9 +42,6 @@ export function availableLanguages(): { code: string; name: string }[] {
   return Object.entries(locales).map(([code, data]) => ({ code, name: data.meta?.name ?? code }))
 }
 
-export function localeTag(code: SupportedLanguage): string {
-  return locales[code]?.meta?.locale ?? 'en-US'
-}
 
 // Mapeia um locale do SO (ex.: "pt-BR", "es-419") para um idioma disponível,
 // por correspondência exata e depois pelo subtag primário.

@@ -7,8 +7,6 @@ directories:
 
 files:
   - dist/**/*
-  - backend/**/*
-  - render/**/*
   - kindle/**/*
   - scripts/**/*
   - locales/**/*

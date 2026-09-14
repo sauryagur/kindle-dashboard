@@ -6,7 +6,6 @@ import type { NavItem, NavKey } from '../types'
 interface SidebarProps {
   appCommit?: string
   appVersion?: string
-  backendPill: { className: string; label: string }
   nav: NavKey
   navItems: NavItem[]
   onNav: (key: NavKey) => void
@@ -17,7 +16,6 @@ interface SidebarProps {
 export function Sidebar({
   appCommit,
   appVersion,
-  backendPill,
   nav,
   navItems,
   onNav,
@@ -32,30 +30,24 @@ export function Sidebar({
       </div>
 
       <nav className="nav">
-        {navItems.map((item) => {
-          return (
-            <button
-              key={item.key}
-              type="button"
-              className={`nav-item ${nav === item.key ? 'active' : ''}`}
-              onClick={() => onNav(item.key)}
-              title={item.hint}
-            >
-              <span className="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
-              <span className="nav-text">
-                <span className="nav-label">{item.label}</span>
-                <span className="nav-hint">{item.hint}</span>
-              </span>
-            </button>
-          )
-        })}
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`nav-item ${nav === item.key ? 'active' : ''}`}
+            onClick={() => onNav(item.key)}
+            title={item.hint}
+          >
+            <span className="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
+            <span className="nav-text">
+              <span className="nav-label">{item.label}</span>
+              <span className="nav-hint">{item.hint}</span>
+            </span>
+          </button>
+        ))}
       </nav>
 
       <div className="sidebar-foot">
-        <div className={`backend-pill ${backendPill.className}`}>
-          <span className="status-dot" aria-hidden="true" />
-          {backendPill.label}
-        </div>
         <div className="about-line">
           <span>v{appVersion ?? '1.0'} ({appCommit ?? 'build'})</span>
           <span className="author-row">

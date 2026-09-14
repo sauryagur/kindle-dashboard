@@ -1,7 +1,6 @@
 import { ActionButton } from '../components/ActionButton'
 import { ExecPill, ReqChip } from '../components/StatusChips'
 import type { Translator } from '../i18n'
-import { dashboardHostFromUrl, dashboardUrlWithHost } from '../lib/format'
 import type { ConfigForm, KindleScriptAction, KindleTab } from '../types'
 import type { DashboardConfig, KindleScriptStatus, KindleStatus } from '../../../shared/types'
 
@@ -9,7 +8,6 @@ interface KindleViewProps {
   checkingKindle: boolean
   config: DashboardConfig | null
   configured: boolean
-  dashboardUrlPreview: string
   form: ConfigForm | null
   installOutput: string | null
   installing: boolean
@@ -33,7 +31,6 @@ export function KindleView({
   checkingKindle,
   config,
   configured,
-  dashboardUrlPreview,
   form,
   installOutput,
   installing,
@@ -124,13 +121,14 @@ export function KindleView({
           </div>
 
           <label className="wide-field">
-            <span>{t('dashboardHost')}</span>
+            <span>{t('imageUrl')}</span>
             <input
-              value={dashboardHostFromUrl(form?.dashboardUrl ?? '')}
-              onChange={(event) => onUpdateForm('dashboardUrl', dashboardUrlWithHost(form?.dashboardUrl ?? '', event.target.value))}
-              placeholder={t('dashboardHostPlaceholder')}
+              type="url"
+              value={form?.imageUrl ?? ''}
+              onChange={(event) => onUpdateForm('imageUrl', event.target.value)}
+              placeholder={t('imageUrlPlaceholder')}
             />
-            <small className="field-note">{t('dashboardGeneratedUrl', { value: dashboardUrlPreview || t('loading') })}</small>
+            <small className="field-note">{t('imageUrlHint')}</small>
           </label>
 
           <div className="field-grid compact">
@@ -226,7 +224,7 @@ export function KindleView({
               <div className="exec-grid">
                 <ExecPill ok={kindleScript.running} label={t('loop')} value={kindleScript.running ? t('loopRunning') : t('loopStopped')} />
                 <ExecPill ok={kindleScript.enabled} label={t('autostart')} value={kindleScript.enabled ? t('autostartActive') : t('autostartInactive')} />
-                <ExecPill ok={kindleScript.backendReachable} label={t('backend')} value={kindleScript.backendReachable ? t('ok') : t('backendOffline')} />
+                <ExecPill ok={kindleScript.imageReachable} label={t('imageStatus')} value={kindleScript.imageReachable ? t('ok') : t('imageUnavailable')} />
               </div>
             ) : (
               <p className="step-empty">{t('diagnosticScriptEmpty')}</p>

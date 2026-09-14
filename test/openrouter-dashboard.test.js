@@ -2,24 +2,63 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { fetchUsage, renderSvg } = require('../scripts/generate-openrouter-dashboard');
 
-test('fetches key usage with bearer authentication', async () => {
+test('fetches account spend and remaining credits with bearer authentication', async () => {
   const originalFetch = global.fetch;
-  let request;
+  const requests = [];
   global.fetch = async (url, options) => {
-    request = { url, options };
+    requests.push({ url, options });
+    const body = options.body && JSON.parse(options.body);
+    const usageByStart = {
+      '2026-09-10T00:00:00.000Z': 2,
+      '2026-09-07T00:00:00.000Z': 5,
+      '2026-09-01T00:00:00.000Z': 9,
+    };
+    const payload = url.endsWith('/credits')
+      ? { data: { total_credits: 20, total_usage: 12 } }
+      : {
+        data: {
+          data: [{ total_usage: usageByStart[body.time_range.start] }],
+          metadata: { truncated: false },
+        },
+      };
+
     return {
       ok: true,
       async json() {
-        return { data: { usage_daily: 2, limit_remaining: 8 } };
+        return payload;
       },
     };
   };
 
   try {
-    const data = await fetchUsage('test-key', 'https://example.test/key');
-    assert.deepEqual(data, { usage_daily: 2, limit_remaining: 8 });
-    assert.equal(request.url, 'https://example.test/key');
-    assert.equal(request.options.headers.Authorization, 'Bearer test-key');
+    const data = await fetchUsage(
+      'test-key',
+      new Date('2026-09-10T12:34:00.000Z'),
+      {
+        analytics: 'https://example.test/analytics/query',
+        credits: 'https://example.test/credits',
+      },
+    );
+    assert.deepEqual(data, {
+      usage_daily: 2,
+      usage_weekly: 5,
+      usage_monthly: 9,
+      limit_remaining: 8,
+    });
+    assert.equal(requests.length, 4);
+    for (const request of requests) {
+      assert.equal(request.options.headers.Authorization, 'Bearer test-key');
+    }
+    const analyticsRequests = requests.filter((request) => request.url.endsWith('/analytics/query'));
+    assert.equal(analyticsRequests.length, 3);
+    assert.deepEqual(
+      analyticsRequests.map((request) => JSON.parse(request.options.body).time_range.start).sort(),
+      [
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-07T00:00:00.000Z',
+        '2026-09-10T00:00:00.000Z',
+      ],
+    );
   } finally {
     global.fetch = originalFetch;
   }

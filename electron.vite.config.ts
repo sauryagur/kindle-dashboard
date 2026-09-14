@@ -19,7 +19,6 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/preload/index.ts'),
-          pip: resolve('src/preload/pip.ts'),
         },
       },
     },

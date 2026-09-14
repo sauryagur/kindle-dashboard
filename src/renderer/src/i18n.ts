@@ -1,15 +1,10 @@
 import type { SupportedLanguage } from '../../shared/types'
 
 interface LocaleMeta {
-  currency: string
-  locale: string
   name: string
 }
 
 interface LocaleData {
-  auth?: Record<string, string>
-  dashboard?: Record<string, string>
-  main?: Record<string, string>
   meta?: LocaleMeta
   ui?: Record<string, string>
 }
@@ -36,9 +31,6 @@ export const LANGUAGES: LanguageOption[] = Object.entries(locales)
   .map(([code, data]) => ({ code, name: data.meta?.name ?? code }))
   .sort((a, b) => a.name.localeCompare(b.name))
 
-export function localeOf(language: SupportedLanguage): string {
-  return locales[language]?.meta?.locale ?? 'en-US'
-}
 
 export function languageName(language: SupportedLanguage): string {
   return locales[language]?.meta?.name ?? language
@@ -46,16 +38,14 @@ export function languageName(language: SupportedLanguage): string {
 
 export type Translator = (key: string, vars?: Record<string, string>) => string
 
-// Mescla os namespaces `ui` e `auth` (com `en` como base), então o idioma alvo
-// sobrescreve e chaves faltando caem para o inglês.
+// Merges `ui` with English as base, so target-language messages override while
+// missing keys fall back to English.
 export function createTranslator(language: SupportedLanguage): Translator {
   const base = locales.en ?? {}
   const target = locales[language] ?? base
   const messages: Record<string, string> = {
     ...(base.ui ?? {}),
-    ...(base.auth ?? {}),
     ...(target.ui ?? {}),
-    ...(target.auth ?? {}),
   }
   return (key, vars) => {
     const template = messages[key] ?? key

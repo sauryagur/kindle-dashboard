@@ -25,22 +25,22 @@ function positiveInt(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function dashboardUrl(value = process.env.DASHBOARD_URL) {
+function imageUrl(value = process.env.IMAGE_URL) {
   const candidate = value || '';
-  if (!candidate) throw new Error('DASHBOARD_URL is required');
+  if (!candidate) throw new Error('IMAGE_URL is required');
 
   const url = new URL(candidate);
-  if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error('DASHBOARD_URL must use http or https');
+  if (url.protocol !== 'https:') {
+    throw new Error('IMAGE_URL must use https');
   }
   return url.toString();
 }
 
 function environmentContents(env = process.env) {
   return [
-    `PC=${shellQuote(dashboardUrl(env.DASHBOARD_URL))}`,
-    `INTERVAL=${shellQuote(positiveInt(env.KINDLE_REFRESH_INTERVAL, 45))}`,
-    `FULL_EVERY=${shellQuote(positiveInt(env.KINDLE_FULL_REFRESH_EVERY, 20))}`,
+    `IMAGE_URL=${shellQuote(imageUrl(env.IMAGE_URL))}`,
+    `INTERVAL=${shellQuote(positiveInt(env.KINDLE_REFRESH_INTERVAL, 21600))}`,
+    `FULL_EVERY=${shellQuote(positiveInt(env.KINDLE_FULL_REFRESH_EVERY, 1))}`,
     `WIFI_RETRY_EVERY=${shellQuote(positiveInt(env.KINDLE_WIFI_RETRY_EVERY, 3))}`,
     '',
   ].join('\n');
@@ -69,7 +69,7 @@ async function uploadAtomic(client, localFile, remoteFile, mode) {
 async function writeEnvironment(client, env = process.env) {
   const content = environmentContents(env);
   const force = [
-    'DASHBOARD_URL',
+    'IMAGE_URL',
     'KINDLE_REFRESH_INTERVAL',
     'KINDLE_FULL_REFRESH_EVERY',
     'KINDLE_WIFI_RETRY_EVERY',
@@ -187,16 +187,15 @@ if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
 else
   echo 'Loop      : stopped'
 fi
-BACKEND_URL=$(sed -n "s/^PC=['\\"]\\{0,1\\}\\([^'\\"]*\\).*/\\1/p" ${shellQuote(REMOTE.environment)} 2>/dev/null)
-if [ -n "$BACKEND_URL" ]; then
-  PING_URL=$(echo "$BACKEND_URL" | sed 's|/dash.png.*$|/api/ping|')
-  if curl -fsS --connect-timeout 3 --max-time 5 "$PING_URL" >/dev/null 2>&1; then
-    echo 'Backend   : reachable'
+IMAGE_URL=$(sed -n "s/^IMAGE_URL=['\\"]\\{0,1\\}\\([^'\\"]*\\).*/\\1/p" ${shellQuote(REMOTE.environment)} 2>/dev/null)
+if [ -n "$IMAGE_URL" ]; then
+  if curl -fsS --connect-timeout 3 --max-time 5 "$IMAGE_URL" -o /dev/null >/dev/null 2>&1; then
+    echo 'Image     : reachable'
   else
-    echo 'Backend   : unavailable'
+    echo 'Image     : unavailable'
   fi
 else
-  echo 'Backend   : unavailable (missing DASHBOARD_URL)'
+  echo 'Image     : unavailable (missing IMAGE_URL)'
 fi
 `, 'read dashboard status');
 }
@@ -209,7 +208,7 @@ function parseStatus(output) {
   }
 
   return {
-    backendReachable: fields.Backend === 'reachable',
+    imageReachable: fields.Image === 'reachable',
     enabled: fields.Enabled === 'yes',
     installed: fields.Autostart === 'installed',
     output,
@@ -265,7 +264,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  dashboardUrl,
+  imageUrl,
   environmentContents,
   install,
   main,

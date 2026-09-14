@@ -1,234 +1,152 @@
 # Kindle Dashboard
 
-Desktop dashboard for tracking AI tool usage and displaying an always-fresh
-image on a jailbroken Kindle Paperwhite.
+GitHub Actions publishes an OpenRouter usage PNG to a fixed Cloudflare R2 object.
+A jailbroken Kindle fetches that public HTTPS image directly over Wi-Fi. Electron
+is only the SSH controller used to configure, diagnose, and manage Kindle-side
+automation.
 
-The app runs on the PC via Electron, collects local data, renders a high
-contrast PNG, and serves it at `http://<IP_PC>:8787/dash.png`. The Kindle
-downloads that image on the local network and draws it on screen with FBInk.
-
-This project does not jailbreak the Kindle. It assumes the device is already
-prepared, with SSH and FBInk working.
-
-## Key Features
-
-- AI usage dashboard for Claude Code and OpenAI Codex.
-- Atomic PNG render optimized for e-ink screens.
-- Local server with `/dash.png`, `/render`, `/api/ping`, `/api/auth`, and `/api/usage`.
-- Kindle setup through the UI: IP, SSH port, SSH user, password, PNG URL, and intervals.
-- Remote diagnostics for SSH, jailbreak, FBInk, hotfix, and installed scripts.
-- Install, remove, start, and stop Kindle scripts from the UI.
-- Windows tray actions to open the panel, open settings, refresh, and quit.
-- Always-on-top desktop `Picture-in-Picture` window with configurable scale.
-- Multilingual desktop UI and rendered PNG.
-- Current languages: `pt-BR`, `en`, and `es`, with fallback to `en`.
-
-## Screenshots
-
-| Panel | Kindle Configuration |
-| --- | --- |
-| ![Panel](screenshot/painel.jpg) | ![Kindle Configuration](screenshot/kindle-config.jpg) |
-
-| Diagnostics and Installation | Logins |
-| --- | --- |
-| ![Diagnostics and Installation](screenshot/kindle-install.jpg) | ![Logins](screenshot/logins.jpg) |
-
-![Picture-in-Picture](screenshot/pip.jpg)
-
-![Kindle example](screenshot/exemplo.jpg)
+This project does not jailbreak Kindle, install FBInk, create an R2 public URL,
+or make private R2 objects readable. It assumes a prepared Kindle and a stable
+public or custom-domain R2 object URL.
 
 ## How It Works
 
-1. The PC opens the Electron app and starts the local backend.
-2. The backend collects local AI tool data.
-3. The main process renders the `/render` page as a PNG.
-4. The app publishes the image at `/dash.png`.
-5. The Kindle downloads the PNG over HTTP on the configured interval.
-6. The Kindle script uses FBInk to update the screen.
+1. `.github/workflows/publish-openrouter-dashboard.yml` runs every six hours or
+   manually.
+2. `scripts/generate-openrouter-dashboard.js` queries OpenRouter usage, creates
+   `1072x1448` SVG, converts it to PNG, and overwrites
+   `openrouter-dashboard.png` in Cloudflare R2.
+3. Electron stores Kindle SSH settings and the stable image URL, then installs a
+   reversible Upstart job.
+4. Kindle waits for Wi-Fi and fetches the image every six hours by default.
+5. Kindle downloads to `/mnt/us/dash.png.tmp`, atomically moves it to
+   `/mnt/us/dash.png` only after a non-empty download, and displays it with
+   FBInk GC16.
 
-In the Electron app, the PC render interval follows the Kindle download
-interval. This keeps the PC from rendering faster than the Kindle downloads.
+Electron need not stay open after installation. Kindle needs Internet/Wi-Fi
+access at fetch time; it does not need PC-local server, same LAN, or port 8787.
 
 ## Requirements
 
-### PC
+### Cloud producer
 
-- Windows 10 or Windows 11.
-- Node.js `>=24` for development.
-- Claude Code and/or OpenAI Codex installed if you want usage from those tools.
+- GitHub repository Actions enabled.
+- Repository secrets: `OPENROUTER_API_KEY`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`, and `R2_BUCKET`.
+- Stable public bucket URL or custom domain for:
+
+  ```text
+  https://<R2_PUBLIC_HOST>/openrouter-dashboard.png
+  ```
+
+Do not use presigned URLs. They expire, so boot-time and periodic Kindle fetches
+would eventually fail. Do not put credentials in the image URL.
 
 ### Kindle
 
-- Kindle Paperwhite with jailbreak already completed.
-- SSH enabled and reachable on the local network.
+- Jailbreak completed.
+- SSH enabled and reachable from Electron during setup.
 - FBInk installed.
-- Kindle and PC on the same Wi-Fi network.
+- `/mnt/us`, `initctl`, `mntroot`, and Hotfix/Upstart at
+  `/etc/upstart/kmc.conf`.
+- Internet/Wi-Fi access to the R2 image URL.
 
-## User Installation
+### Electron controller
 
-Download the `.exe` installer from a release, or build it locally:
-
-```powershell
-npm run build:win
-```
-
-Then run the installer on Windows and open **Kindle Dashboard** from the Start
-Menu.
-
-If setup is already complete, the app can start directly in the background and
-stay available in the Windows tray.
+- Node.js `>=24` for development, or a release installer.
+- Network access to Kindle SSH during setup and maintenance.
 
 ## First Run
 
-Open **Kindle > Configuration** and fill in:
+Open **Kindle** and enter:
 
-| Field | Expected value |
+| Field | Value |
 | --- | --- |
 | Kindle IP | `<KINDLE_IP>` |
-| SSH Port | Usually `22` |
+| SSH Port | usually `22` |
 | SSH User | `<SSH_USER>` |
 | SSH Password | `<SSH_PASSWORD>` |
-| PC IP | `<PC_IP>` |
-| Kindle Download | Interval, in seconds, between PNG downloads |
-| Full Refresh | How many cycles between full Kindle refreshes |
-| Wi-Fi Retry | How many consecutive failures before Wi-Fi recovery |
+| R2 image URL | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png` |
+| Fetch interval | `21600` seconds by default |
+| Full refresh | `1` by default |
+| Wi-Fi retry | `3` consecutive failures |
 
 Then:
 
-1. Click **Save**.
-2. Open **Kindle > Diagnostics and Installation**.
-3. Click **Check Kindle**.
-4. Confirm that SSH, jailbreak, FBInk, and other checks are OK.
-5. Click **Install scripts**.
-6. Open **Logins** and resolve Claude Code or Codex login issues if they appear.
+1. Click **Save configuration**.
+2. Open **Diagnostics and install**.
+3. Click **Check Kindle** and confirm SSH, jailbreak, FBInk, and Hotfix checks.
+4. Click **Install scripts**.
+5. Confirm loop, autostart, and R2 image availability status.
 
-Once scripts are installed, the Kindle downloads and displays the PNG on its
-own, including after reboot.
+The managed loop starts after Kindle reboot. Use Start or Stop in diagnostics to
+control it without reinstalling. Uninstall removes the Upstart job and all
+Kindle Dashboard files it installed.
 
-## Daily Use
+![Kindle configuration](screenshot/kindle-config.jpg)
 
-- **Panel** shows the current PNG preview and can force a new render.
-- **Kindle > Diagnostics** starts or stops the Kindle loop without removing autostart.
-- **Logins** shows local authentication state.
-- **Settings** changes language and toggles `Picture-in-Picture`.
-- `Picture-in-Picture` shows the dashboard in a small always-on-top window.
-- The Windows tray can reopen the panel, open settings, refresh, and quit.
+![Diagnostics and installation](screenshot/kindle-install.jpg)
 
-To remove Kindle automation, use **Uninstall** in
-**Kindle > Diagnostics and Installation**. Manual guide:
-[KINDLE-INSTALLATION.md](KINDLE-INSTALLATION.md).
+## GitHub Actions and R2
 
-## Multilingual Support
+The workflow writes the same object key on every run:
 
-Translatable text lives in `locales/<language>.json`.
+```text
+openrouter-dashboard.png
+```
 
-The app discovers languages automatically from files in `locales/`. Adding a
-new language does not require TypeScript changes: create a BCP-47 JSON file,
-translate values, and keep the keys. Missing keys fall back to `locales/en.json`.
+Keep the Kindle URL fixed at that object. To publish an immediate update, run
+**Publish OpenRouter dashboard** from GitHub Actions or overwrite the same R2
+object. Kindle displays it after the next fetch interval.
 
-Details: [locales/README.md](locales/README.md).
-
-## Privacy
-
-Docs and examples must use placeholders:
-
-- `<IP_DO_PC>`
-- `<IP_DO_KINDLE>`
-- `<USUARIO_SSH>`
-- `<SENHA_SSH>`
-
-Do not commit:
-
-- Kindle serial number;
-- real PC or Kindle IP;
-- real username;
-- SSH password;
-- tokens, cookies, local databases, or session files;
-- logs, builds, installers, or runtime PNGs.
-
-The SSH password saved by the app lives in Electron `userData` and uses
-`safeStorage` when available. The renderer receives only public state, such as
-`kindlePasswordSaved`.
+The object is uploaded with `Cache-Control: no-cache`; configure any custom CDN
+not to serve stale image content beyond its revalidation policy.
 
 ## Development
 
-Install dependencies:
-
-```powershell
-npm install
-```
-
-Run the app in development:
-
-```powershell
+```sh
+npm ci
 npm run dev
-```
-
-Main commands:
-
-```powershell
-npm run dev                # opens Electron in development
-npm run build              # typecheck + Electron build
-npm run build:win          # generates Windows installer
-npm run typecheck          # validates TypeScript
-npm test                   # runs Node tests
-npm run backend            # legacy standalone backend
-npm run supervisor         # legacy standalone supervisor
-npm run autostart:install  # registers Windows autostart
-npm run autostart:status   # shows Windows autostart status
-npm run autostart:stop     # stops Windows autostart
-npm run autostart:uninstall # removes Windows autostart
-```
-
-Kindle commands should be run through the Electron UI. The `npm run kindle` and
-`npm run kindle:autostart` scripts exist for support and local diagnostics.
-
-## Structure
-
-```text
-backend/       local API, collectors, and authentication preflight
-build/         app icons
-kindle/        scripts executed on the Kindle
-locales/       UI, main, auth, and dashboard translations
-render/        HTML used to render the PNG
-scripts/       Node and PowerShell helpers
-src/main/      Electron main process
-src/preload/   secure bridges via contextBridge
-src/renderer/  React UI
-src/shared/    shared types
-test/          Node tests
-```
-
-## Windows Installer Build
-
-```powershell
-npm run build:win
-```
-
-This command runs:
-
-1. `npm run typecheck`
-2. `electron-vite build`
-3. `electron-builder --win`
-
-Expected output:
-
-```text
-release/Kindle-Dashboard-<version>-setup.exe
-```
-
-## Recommended Validation
-
-```powershell
 npm test
 npm run typecheck
 npm run build
 ```
 
+Useful support commands:
+
+```sh
+npm run kindle
+npm run kindle:autostart
+```
+
+The Electron UI is normal setup path. Commands are for support and local
+Kindle diagnostics.
+
+## Structure
+
+```text
+.github/workflows/  scheduled OpenRouter PNG publishing
+kindle/             managed Kindle fetch and Upstart scripts
+locales/            Electron controller translations
+scripts/            SSH installer and OpenRouter image generator
+src/main/           Electron controller process
+src/preload/        secure Electron bridge
+src/renderer/       React Kindle controller
+src/shared/         shared types
+test/               Node tests
+```
+
+## Privacy
+
+Never commit real Kindle IPs, SSH usernames/passwords, R2 credentials, OpenRouter
+keys, tokens, cookies, session files, or logs. Use placeholders such as
+`<KINDLE_IP>`, `<SSH_USER>`, `<SSH_PASSWORD>`, and `<R2_PUBLIC_HOST>`.
+
+Electron stores a saved SSH password in Electron `userData`, using `safeStorage`
+when available. Renderer receives only `kindlePasswordSaved`, never password.
 
 ## Links
 
-- Change history: [CHANGELOG.md](CHANGELOG.md)
-- Kindle installation: [KINDLE-INSTALLATION.md](KINDLE-INSTALLATION.md)
-- Translations: [locales/README.md](locales/README.md)
-- Releases: [GitHub Releases](https://github.com/alexishida/kindle-dashboard/releases)
+- [Kindle installation](KINDLE-INSTALLATION.md)
+- [Translations](locales/README.md)
+- [GitHub Releases](https://github.com/alexishida/kindle-dashboard/releases)

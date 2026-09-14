@@ -322,47 +322,6 @@ h3 {
   padding: 0 4px;
 }
 
-.backend-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  background: var(--panel);
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-dim);
-  width: fit-content;
-}
-
-.status-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 9px;
-  border-radius: 999px;
-  background: var(--text-soft);
-}
-
-.backend-pill.online .status-dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px var(--ok-bg);
-}
-
-.backend-pill.pending .status-dot {
-  background: var(--warn);
-  box-shadow: 0 0 0 3px var(--warn-bg);
-}
-
-.backend-pill.offline .status-dot {
-  background: var(--danger);
-  box-shadow: 0 0 0 3px var(--danger-bg);
-}
-
-.foot-line {
-  color: var(--text-soft);
-  font-size: 11px;
-}
 
 .about-line {
   display: flex;
@@ -406,40 +365,13 @@ h3 {
 }
 
 .topbar {
-  display: grid;
-  grid-template-columns: minmax(160px, 1fr) auto auto;
+  display: flex;
   align-items: center;
-  gap: 20px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-2);
   padding: 16px 22px;
 }
 
-.topbar-meta {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.meta-key {
-  color: var(--text-soft);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.meta-val {
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-}
 
 .actions,
 .button-row {
@@ -508,15 +440,10 @@ h3 {
   color: #0b1220;
 }
 
-.dashboard-grid {
-  min-height: 0;
-  display: block;
-}
 
 /* ---- panels ---- */
 
-.panel,
-.preview-panel {
+.panel {
   min-height: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -979,64 +906,6 @@ button.danger:hover:not(:disabled) {
   overflow: visible;
 }
 
-/* ---- preview / painel ---- */
-
-.preview-wrap {
-  display: grid;
-  gap: 12px;
-}
-
-.preview-panel {
-  overflow: hidden;
-  background: #fff;
-  display: grid;
-  place-items: center;
-  /* mesma proporcao do Kindle deitado (paisagem 1448x1072) */
-  aspect-ratio: 1448 / 1072;
-  width: 100%;
-  max-width: min(100%, 1360px);
-  margin: 0 auto;
-}
-
-.preview-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-
-.preview-frame {
-  border: 0;
-  background: #fff;
-  display: block;
-}
-
-.preview-image {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  transform-origin: center;
-}
-
-.loading {
-  height: 100%;
-  display: grid;
-  place-items: center;
-  color: var(--text-soft);
-  font-weight: 700;
-}
-
-.preview-error {
-  max-width: min(100%, 1360px);
-  margin: 0 auto;
-}
-
-.muted {
-  color: var(--text-soft);
-}
 
 @media (max-width: 1180px) {
   .app-shell {
@@ -1047,11 +916,4 @@ button.danger:hover:not(:disabled) {
     display: none;
   }
 
-  .topbar-meta {
-    display: none;
-  }
-
-  .dashboard-grid {
-    display: block;
-  }
 }

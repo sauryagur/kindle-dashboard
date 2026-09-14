@@ -99,9 +99,9 @@ export function showSettingsWindow(): void {
   sendToRenderer('settings:open')
 }
 
-export function showPanelWindow(): void {
+export function showKindleWindow(): void {
   restoreMainWindow()
-  sendToRenderer('panel:open')
+  sendToRenderer('kindle:open')
 }
 
 export function destroyMainWindow(): void {

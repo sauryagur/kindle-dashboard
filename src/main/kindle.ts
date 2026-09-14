@@ -8,7 +8,7 @@ import {
   ksshModule,
   type SshClient,
   type SshOptions,
-} from './backend-bridge'
+} from './kindle-bridge'
 import {
   type StoredDashboardConfig,
   decryptPassword,
@@ -32,7 +32,7 @@ function sshOptions(config: StoredDashboardConfig): SshOptions {
 
 function kindleEnvironment(config: StoredDashboardConfig): Record<string, string> {
   return {
-    DASHBOARD_URL: config.dashboardUrl,
+    IMAGE_URL: config.imageUrl,
     KINDLE_FULL_REFRESH_EVERY: String(config.kindleFullRefreshEvery),
     KINDLE_REFRESH_INTERVAL: String(config.kindleRefreshInterval),
     KINDLE_WIFI_RETRY_EVERY: String(config.kindleWifiRetryEvery),

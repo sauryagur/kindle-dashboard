@@ -23,15 +23,15 @@ if [ -f "$ENV_FILE" ]; then
   . "$ENV_FILE"
 fi
 
-PC="${PC:-}"
-INTERVAL="${INTERVAL:-45}"
-FULL_EVERY="${FULL_EVERY:-20}"
+IMAGE_URL="${IMAGE_URL:-}"
+INTERVAL="${INTERVAL:-21600}"
+FULL_EVERY="${FULL_EVERY:-1}"
 WIFI_RETRY_EVERY="${WIFI_RETRY_EVERY:-3}"
 MAX_FAILURES="${MAX_FAILURES:-6}"
-export PC INTERVAL FULL_EVERY WIFI_RETRY_EVERY MAX_FAILURES
+export IMAGE_URL INTERVAL FULL_EVERY WIFI_RETRY_EVERY MAX_FAILURES
 
-if [ -z "$PC" ]; then
-  log "missing PC dashboard URL"
+if [ -z "$IMAGE_URL" ]; then
+  log "missing cloud image URL"
   exit 2
 fi
 
@@ -55,7 +55,7 @@ while [ "$remaining" -gt 0 ]; do
 done
 
 rm -f /mnt/us/dash-loop.stop
-log "starting loop (wifi=${STATE:-unknown}, PC=$PC)"
+log "starting loop (wifi=${STATE:-unknown}, image=$IMAGE_URL)"
 setsid sh "$LOOP" </dev/null >> "$LOOP_LOG" 2>&1 &
 sleep 2
 

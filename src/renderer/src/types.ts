@@ -1,5 +1,4 @@
-export type BackendState = 'checking' | 'online' | 'offline'
-export type NavKey = 'painel' | 'kindle' | 'logins' | 'configuracoes'
+export type NavKey = 'kindle' | 'configuracoes'
 export type KindleTab = 'config' | 'diagnostico'
 export type KindleScriptAction = 'start' | 'stop'
 
@@ -16,8 +15,8 @@ export type IconName =
   | 'play'
   | 'stop'
   | 'search'
-  | 'github'
   | 'globe'
+  | 'github'
 
 export interface NavItem {
   key: NavKey
@@ -27,7 +26,7 @@ export interface NavItem {
 }
 
 export interface ConfigForm {
-  dashboardUrl: string
+  imageUrl: string
   kindleFullRefreshEvery: string
   kindleIp: string
   kindlePassword: string

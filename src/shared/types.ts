@@ -4,25 +4,15 @@ export type SupportedLanguage = string
 
 export type LanguagePreference = SupportedLanguage | 'system'
 
-export interface RuntimeInfo {
+export interface AppInfo {
   appCommit: string
   appVersion: string
-  baseUrl: string
   configured: boolean
-  imageUrl: string
-  lastRender: RenderResult | null
-  outputPath: string
-  renderIntervalSeconds: number
   systemLanguage: SupportedLanguage
 }
 
-export interface RenderResult {
-  outputPath: string
-  updatedAt: string
-}
-
 export interface DashboardConfig {
-  dashboardUrl: string
+  imageUrl: string
   kindleFullRefreshEvery: number
   kindleIp: string
   kindlePasswordSaved: boolean
@@ -31,13 +21,11 @@ export interface DashboardConfig {
   kindleUser: string
   kindleWifiRetryEvery: number
   language: LanguagePreference
-  pictureInPicture: boolean
-  pictureInPictureScale: number
   setupComplete: boolean
 }
 
 export interface DashboardConfigInput {
-  dashboardUrl: string
+  imageUrl: string
   kindleFullRefreshEvery: number
   kindleIp: string
   kindlePassword?: string
@@ -46,23 +34,6 @@ export interface DashboardConfigInput {
   kindleUser: string
   kindleWifiRetryEvery: number
 }
-
-export interface AuthSourceStatus {
-  detailKey: string
-  detailVars?: Record<string, string>
-  hintKey?: string
-  label: string
-  name: string
-  ok: boolean
-}
-
-export interface AuthStatus {
-  checkedAt: string
-  ok: boolean
-  sources: AuthSourceStatus[]
-}
-
-export type AuthLoginTool = 'claude' | 'codex'
 
 export interface KindleStatus {
   canInstall: boolean
@@ -79,7 +50,7 @@ export interface KindleStatus {
 }
 
 export interface KindleScriptStatus {
-  backendReachable: boolean
+  imageReachable: boolean
   enabled: boolean
   installed: boolean
   output: string
@@ -93,25 +64,18 @@ export interface KindleInstallResult {
 }
 
 export interface DashboardApi {
-  checkAuth: () => Promise<AuthStatus>
   checkKindle: () => Promise<KindleStatus>
-  getKindleScriptStatus: () => Promise<KindleScriptStatus>
-  getRuntimeInfo: () => Promise<RuntimeInfo>
+  getAppInfo: () => Promise<AppInfo>
   getConfig: () => Promise<DashboardConfig>
+  getKindleScriptStatus: () => Promise<KindleScriptStatus>
   installKindle: () => Promise<KindleInstallResult>
+  openRepo: () => Promise<void>
+  quit: () => Promise<void>
+  saveConfig: (config: DashboardConfigInput) => Promise<DashboardConfig>
   setLanguage: (language: LanguagePreference) => Promise<DashboardConfig>
-  setPictureInPicture: (enabled: boolean) => Promise<DashboardConfig>
-  setPictureInPictureScale: (scale: number) => Promise<DashboardConfig>
   startKindleScript: () => Promise<KindleScriptStatus>
   stopKindleScript: () => Promise<KindleScriptStatus>
   uninstallKindle: () => Promise<KindleInstallResult>
-  openLogin: (tool: AuthLoginTool) => Promise<void>
-  openRepo: () => Promise<void>
-  renderNow: () => Promise<RenderResult>
-  saveConfig: (config: DashboardConfigInput) => Promise<DashboardConfig>
-  quit: () => Promise<void>
-  onOpenPanel: (callback: () => void) => () => void
+  onOpenKindle: (callback: () => void) => () => void
   onOpenSettings: (callback: () => void) => () => void
-  onPipChanged: (callback: (enabled: boolean) => void) => () => void
-  onRenderCompleted: (callback: (result: RenderResult) => void) => () => void
 }
