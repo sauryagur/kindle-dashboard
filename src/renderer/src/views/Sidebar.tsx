@@ -1,16 +1,16 @@
-import { ActionButton } from '../components/ActionButton'
-import { Icon } from '../components/Icon'
-import type { Translator } from '../i18n'
-import type { NavItem, NavKey } from '../types'
+import { ActionButton } from "../components/ActionButton";
+import { Icon } from "../components/Icon";
+import type { Translator } from "../i18n";
+import type { NavItem, NavKey } from "../types";
 
 interface SidebarProps {
-  appCommit?: string
-  appVersion?: string
-  nav: NavKey
-  navItems: NavItem[]
-  onNav: (key: NavKey) => void
-  onOpenRepo: () => void
-  t: Translator
+  appCommit?: string;
+  appVersion?: string;
+  nav: NavKey;
+  navItems: NavItem[];
+  onNav: (key: NavKey) => void;
+  onOpenRepo: () => void;
+  t: Translator;
 }
 
 export function Sidebar({
@@ -25,8 +25,10 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true"><Icon name="book" /></span>
-        <strong className="brand-title">{t('panelBrandTitle')}</strong>
+        <span className="brand-mark" aria-hidden="true">
+          <Icon name="book" />
+        </span>
+        <strong className="brand-title">{t("panelBrandTitle")}</strong>
       </div>
 
       <nav className="nav">
@@ -34,11 +36,13 @@ export function Sidebar({
           <button
             key={item.key}
             type="button"
-            className={`nav-item ${nav === item.key ? 'active' : ''}`}
+            className={`nav-item ${nav === item.key ? "active" : ""}`}
             onClick={() => onNav(item.key)}
             title={item.hint}
           >
-            <span className="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
+            <span className="nav-icon" aria-hidden="true">
+              <Icon name={item.icon} />
+            </span>
             <span className="nav-text">
               <span className="nav-label">{item.label}</span>
               <span className="nav-hint">{item.hint}</span>
@@ -49,13 +53,15 @@ export function Sidebar({
 
       <div className="sidebar-foot">
         <div className="about-line">
-          <span>v{appVersion ?? '1.0'} ({appCommit ?? 'build'})</span>
+          <span>
+            v{appVersion ?? "1.0"} ({appCommit ?? "build"})
+          </span>
           <span className="author-row">
             <span>Alex Ishida</span>
             <ActionButton
               className="icon-link"
-              title={t('githubOpen')}
-              aria-label={t('githubOpen')}
+              title={t("githubOpen")}
+              aria-label={t("githubOpen")}
               onClick={onOpenRepo}
               icon="github"
               iconOnly
@@ -64,5 +70,5 @@ export function Sidebar({
         </div>
       </div>
     </aside>
-  )
+  );
 }

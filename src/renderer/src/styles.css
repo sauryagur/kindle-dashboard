@@ -62,7 +62,10 @@ button {
   padding: 9px 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    opacity 0.12s;
 }
 
 button:hover:not(:disabled) {
@@ -125,7 +128,9 @@ select {
   color: var(--text);
   padding: 10px 12px;
   outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 
 input::placeholder {
@@ -322,7 +327,6 @@ h3 {
   padding: 0 4px;
 }
 
-
 .about-line {
   display: flex;
   flex-direction: column;
@@ -371,7 +375,6 @@ h3 {
   background: var(--bg-2);
   padding: 16px 22px;
 }
-
 
 .actions,
 .button-row {
@@ -439,7 +442,6 @@ h3 {
   border-color: var(--accent);
   color: #0b1220;
 }
-
 
 /* ---- panels ---- */
 
@@ -540,12 +542,14 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel-2);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
   pointer-events: none;
 }
 
 .switch-track::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 3px;
@@ -554,7 +558,9 @@ h3 {
   border-radius: 50%;
   background: var(--text-dim);
   transform: translateY(-50%);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .switch input:checked + .switch-track {
@@ -906,7 +912,6 @@ button.danger:hover:not(:disabled) {
   overflow: visible;
 }
 
-
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 200px minmax(0, 1fr);
@@ -915,5 +920,4 @@ button.danger:hover:not(:disabled) {
   .nav-hint {
     display: none;
   }
-
 }

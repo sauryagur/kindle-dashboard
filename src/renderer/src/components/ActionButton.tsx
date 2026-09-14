@@ -1,9 +1,9 @@
-import { Icon } from './Icon'
-import type { IconName } from '../types'
+import { Icon } from "./Icon";
+import type { IconName } from "../types";
 
 export interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: IconName
-  iconOnly?: boolean
+  icon: IconName;
+  iconOnly?: boolean;
 }
 
 export function ActionButton({
@@ -11,13 +11,13 @@ export function ActionButton({
   className,
   icon,
   iconOnly = false,
-  type = 'button',
+  type = "button",
   ...props
 }: ActionButtonProps): React.JSX.Element {
   return (
     <button
       type={type}
-      className={`ui-button ${iconOnly ? 'icon-only' : ''} ${className ?? ''}`.trim()}
+      className={`ui-button ${iconOnly ? "icon-only" : ""} ${className ?? ""}`.trim()}
       {...props}
     >
       <span className="button-icon" aria-hidden="true">
@@ -25,5 +25,5 @@ export function ActionButton({
       </span>
       {children ? <span className="button-label">{children}</span> : null}
     </button>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-import type { NavItem } from '../types'
+import type { NavItem } from "../types";
 
 interface TopbarProps {
-  activeNav: NavItem
+  activeNav: NavItem;
 }
 
 export function Topbar({ activeNav }: TopbarProps): React.JSX.Element {
@@ -12,5 +12,5 @@ export function Topbar({ activeNav }: TopbarProps): React.JSX.Element {
         <h1>{activeNav.label}</h1>
       </div>
     </header>
-  )
+  );
 }

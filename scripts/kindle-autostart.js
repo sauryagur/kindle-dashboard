@@ -1,37 +1,32 @@
 #!/usr/bin/env node
 // Installs and manages the Kindle-side Upstart launcher over SSH.
 
-const path = require('path');
-const {
-  connect,
-  execCommand,
-  shellQuote,
-  uploadFile,
-} = require('./kssh');
+const path = require("path");
+const { connect, execCommand, shellQuote, uploadFile } = require("./kssh");
 
-const ROOT = path.resolve(__dirname, '..');
-const JOB_NAME = 'kindle-dashboard';
+const ROOT = path.resolve(__dirname, "..");
+const JOB_NAME = "kindle-dashboard";
 const REMOTE = {
-  loop: '/mnt/us/dash-loop.sh',
-  launcher: '/mnt/us/dash-autostart.sh',
-  environment: '/mnt/us/dash-autostart.env',
-  disabled: '/mnt/us/dash-autostart.disabled',
-  jobSource: '/mnt/us/kindle-dashboard.conf',
-  jobTarget: '/etc/upstart/kindle-dashboard.conf',
+  loop: "/mnt/us/dash-loop.sh",
+  launcher: "/mnt/us/dash-autostart.sh",
+  environment: "/mnt/us/dash-autostart.env",
+  disabled: "/mnt/us/dash-autostart.disabled",
+  jobSource: "/mnt/us/kindle-dashboard.conf",
+  jobTarget: "/etc/upstart/kindle-dashboard.conf",
 };
 
 function positiveInt(value, fallback) {
-  const parsed = Number.parseInt(value || '', 10);
+  const parsed = Number.parseInt(value || "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function imageUrl(value = process.env.IMAGE_URL) {
-  const candidate = value || '';
-  if (!candidate) throw new Error('IMAGE_URL is required');
+  const candidate = value || "";
+  if (!candidate) throw new Error("IMAGE_URL is required");
 
   const url = new URL(candidate);
-  if (url.protocol !== 'https:') {
-    throw new Error('IMAGE_URL must use https');
+  if (url.protocol !== "https:") {
+    throw new Error("IMAGE_URL must use https");
   }
   return url.toString();
 }
@@ -42,15 +37,16 @@ function environmentContents(env = process.env) {
     `INTERVAL=${shellQuote(positiveInt(env.KINDLE_REFRESH_INTERVAL, 21600))}`,
     `FULL_EVERY=${shellQuote(positiveInt(env.KINDLE_FULL_REFRESH_EVERY, 1))}`,
     `WIFI_RETRY_EVERY=${shellQuote(positiveInt(env.KINDLE_WIFI_RETRY_EVERY, 3))}`,
-    '',
-  ].join('\n');
+    "",
+  ].join("\n");
 }
 
-async function run(client, command, label = 'remote command') {
+async function run(client, command, label = "remote command") {
   const remoteCommand = `PATH=/sbin:/usr/sbin:/bin:/usr/bin\nexport PATH\n${command}`;
   const result = await execCommand(client, remoteCommand);
   if (result.code !== 0) {
-    const detail = result.stderr.trim() || result.stdout.trim() || `exit ${result.code}`;
+    const detail =
+      result.stderr.trim() || result.stdout.trim() || `exit ${result.code}`;
     throw new Error(`${label} failed: ${detail}`);
   }
   return result.stdout.trim();
@@ -69,34 +65,55 @@ async function uploadAtomic(client, localFile, remoteFile, mode) {
 async function writeEnvironment(client, env = process.env) {
   const content = environmentContents(env);
   const force = [
-    'IMAGE_URL',
-    'KINDLE_REFRESH_INTERVAL',
-    'KINDLE_FULL_REFRESH_EVERY',
-    'KINDLE_WIFI_RETRY_EVERY',
-  ].some((name) => env[name]) ? '1' : '0';
+    "IMAGE_URL",
+    "KINDLE_REFRESH_INTERVAL",
+    "KINDLE_FULL_REFRESH_EVERY",
+    "KINDLE_WIFI_RETRY_EVERY",
+  ].some((name) => env[name])
+    ? "1"
+    : "0";
   const command = [
     `if [ ${shellQuote(force)} = '1' ] || [ ! -f ${shellQuote(REMOTE.environment)} ]; then`,
     `  printf %s ${shellQuote(content)} > ${shellQuote(REMOTE.environment)}`,
     `  chmod 600 ${shellQuote(REMOTE.environment)}`,
-    'fi',
-  ].join('\n');
-  await run(client, command, 'create dashboard environment');
+    "fi",
+  ].join("\n");
+  await run(client, command, "create dashboard environment");
 }
 
 async function preflight(client) {
-  await run(client, [
-    'command -v initctl >/dev/null 2>&1',
-    'command -v mntroot >/dev/null 2>&1',
-    '[ -f /etc/upstart/kmc.conf ]',
-    '[ -d /mnt/us ]',
-  ].join(' && '), 'Kindle hotfix preflight');
+  await run(
+    client,
+    [
+      "command -v initctl >/dev/null 2>&1",
+      "command -v mntroot >/dev/null 2>&1",
+      "[ -f /etc/upstart/kmc.conf ]",
+      "[ -d /mnt/us ]",
+    ].join(" && "),
+    "Kindle hotfix preflight",
+  );
 }
 
 async function install(client, env = process.env) {
   await preflight(client);
-  await uploadAtomic(client, path.join(ROOT, 'kindle', 'dash-loop.sh'), REMOTE.loop, '755');
-  await uploadAtomic(client, path.join(ROOT, 'kindle', 'dash-autostart.sh'), REMOTE.launcher, '755');
-  await uploadAtomic(client, path.join(ROOT, 'kindle', 'kindle-dashboard.conf'), REMOTE.jobSource, '644');
+  await uploadAtomic(
+    client,
+    path.join(ROOT, "kindle", "dash-loop.sh"),
+    REMOTE.loop,
+    "755",
+  );
+  await uploadAtomic(
+    client,
+    path.join(ROOT, "kindle", "dash-autostart.sh"),
+    REMOTE.launcher,
+    "755",
+  );
+  await uploadAtomic(
+    client,
+    path.join(ROOT, "kindle", "kindle-dashboard.conf"),
+    REMOTE.jobSource,
+    "644",
+  );
   await writeEnvironment(client, env);
 
   const command = `
@@ -118,19 +135,25 @@ rm -f ${shellQuote(REMOTE.disabled)}
 stop ${JOB_NAME} >/dev/null 2>&1 || true
 start ${JOB_NAME} >/dev/null
 `;
-  await run(client, command, 'install Upstart job');
+  await run(client, command, "install Upstart job");
   await new Promise((resolve) => setTimeout(resolve, 3000));
 }
 
 async function start(client) {
-  await run(client, `
+  await run(
+    client,
+    `
 rm -f ${shellQuote(REMOTE.disabled)}
 /bin/sh ${shellQuote(REMOTE.launcher)}
-`, 'start dashboard');
+`,
+    "start dashboard",
+  );
 }
 
 async function stop(client) {
-  await run(client, `
+  await run(
+    client,
+    `
 touch ${shellQuote(REMOTE.disabled)}
 touch /mnt/us/dash-loop.stop
 PID=$(cat /mnt/us/dash-loop.pid 2>/dev/null)
@@ -149,12 +172,16 @@ if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
     rm -f /mnt/us/dash-loop.pid
   fi
 fi
-`, 'stop dashboard');
+`,
+    "stop dashboard",
+  );
 }
 
 async function uninstall(client) {
   await stop(client);
-  await run(client, `
+  await run(
+    client,
+    `
 if [ -f ${shellQuote(REMOTE.jobTarget)} ] &&
    grep -q 'Kindle Dashboard project' ${shellQuote(REMOTE.jobTarget)}; then
   mntroot rw || exit 1
@@ -168,11 +195,15 @@ rm -f ${shellQuote(REMOTE.launcher)} ${shellQuote(REMOTE.jobSource)} ${shellQuot
       ${shellQuote(REMOTE.loop)} ${shellQuote(REMOTE.environment)} \
       /mnt/us/dash-loop.log /mnt/us/dash-autostart.log \
       /mnt/us/dash-loop.stop /mnt/us/dash-loop.pid /mnt/us/dash.png
-`, 'uninstall Upstart job');
+`,
+    "uninstall Upstart job",
+  );
 }
 
 async function status(client) {
-  return run(client, `
+  return run(
+    client,
+    `
 if [ -f ${shellQuote(REMOTE.jobTarget)} ]; then
   echo 'Autostart : installed'
   if [ -f ${shellQuote(REMOTE.disabled)} ]; then echo 'Enabled   : no'; else echo 'Enabled   : yes'; fi
@@ -197,41 +228,48 @@ if [ -n "$IMAGE_URL" ]; then
 else
   echo 'Image     : unavailable (missing IMAGE_URL)'
 fi
-`, 'read dashboard status');
+`,
+    "read dashboard status",
+  );
 }
 
 function parseStatus(output) {
   const fields = {};
   for (const line of output.split(/\r?\n/)) {
-    const separator = line.indexOf(':');
-    if (separator > 0) fields[line.slice(0, separator).trim()] = line.slice(separator + 1).trim();
+    const separator = line.indexOf(":");
+    if (separator > 0)
+      fields[line.slice(0, separator).trim()] = line
+        .slice(separator + 1)
+        .trim();
   }
 
   return {
-    imageReachable: fields.Image === 'reachable',
-    enabled: fields.Enabled === 'yes',
-    installed: fields.Autostart === 'installed',
+    imageReachable: fields.Image === "reachable",
+    enabled: fields.Enabled === "yes",
+    installed: fields.Autostart === "installed",
     output,
-    running: /^running(?:\s|$)/.test(fields.Loop || ''),
+    running: /^running(?:\s|$)/.test(fields.Loop || ""),
   };
 }
 
 function printUsage() {
-  console.error('Usage: node scripts/kindle-autostart.js <install|status|start|stop|uninstall>');
+  console.error(
+    "Usage: node scripts/kindle-autostart.js <install|status|start|stop|uninstall>",
+  );
 }
 
 async function runAction(action, options = {}) {
-  if (!['install', 'status', 'start', 'stop', 'uninstall'].includes(action)) {
+  if (!["install", "status", "start", "stop", "uninstall"].includes(action)) {
     printUsage();
-    return { code: 2, output: '' };
+    return { code: 2, output: "" };
   }
 
   const client = await connect(options.ssh);
   try {
-    if (action === 'install') await install(client, options.env || process.env);
-    else if (action === 'start') await start(client);
-    else if (action === 'stop') await stop(client);
-    else if (action === 'uninstall') await uninstall(client);
+    if (action === "install") await install(client, options.env || process.env);
+    else if (action === "start") await start(client);
+    else if (action === "stop") await stop(client);
+    else if (action === "uninstall") await uninstall(client);
 
     const output = await status(client);
     return { code: 0, output, status: parseStatus(output) };

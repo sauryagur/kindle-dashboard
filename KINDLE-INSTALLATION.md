@@ -41,16 +41,16 @@ On controller computer:
 
 Open **Kindle** and set:
 
-| Field | Value |
-| --- | --- |
-| Kindle IP | `<KINDLE_IP>` |
-| SSH Port | usually `22` |
-| SSH User | `<SSH_USER>` |
-| SSH Password | `<SSH_PASSWORD>` |
-| R2 image URL | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png` |
-| Fetch interval | seconds between fetches; default `21600` |
-| Full refresh | successful fetches between full refreshes; default `1` |
-| Wi-Fi retry | consecutive failures before recovery; default `3` |
+| Field          | Value                                                  |
+| -------------- | ------------------------------------------------------ |
+| Kindle IP      | `<KINDLE_IP>`                                          |
+| SSH Port       | usually `22`                                           |
+| SSH User       | `<SSH_USER>`                                           |
+| SSH Password   | `<SSH_PASSWORD>`                                       |
+| R2 image URL   | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png`    |
+| Fetch interval | seconds between fetches; default `21600`               |
+| Full refresh   | successful fetches between full refreshes; default `1` |
+| Wi-Fi retry    | consecutive failures before recovery; default `3`      |
 
 Save configuration, then **Check Kindle**. Confirm SSH, jailbreak, FBInk, and
 Hotfix checks. Use **Install scripts**. The SSH password is stored locally in
@@ -59,13 +59,13 @@ saved-password state.
 
 ## Installed Files
 
-| Kindle path | Purpose |
-| --- | --- |
-| `/mnt/us/dash-loop.sh` | Downloads `IMAGE_URL`, atomically updates `dash.png`, displays it with FBInk. |
-| `/mnt/us/dash-autostart.sh` | Loads configuration, waits for Wi-Fi, starts loop. |
-| `/mnt/us/dash-autostart.env` | Managed cloud image URL and timing. |
-| `/mnt/us/kindle-dashboard.conf` | Removable Upstart job source. |
-| `/etc/upstart/kindle-dashboard.conf` | Upstart job invoked after framework readiness. |
+| Kindle path                          | Purpose                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
+| `/mnt/us/dash-loop.sh`               | Downloads `IMAGE_URL`, atomically updates `dash.png`, displays it with FBInk. |
+| `/mnt/us/dash-autostart.sh`          | Loads configuration, waits for Wi-Fi, starts loop.                            |
+| `/mnt/us/dash-autostart.env`         | Managed cloud image URL and timing.                                           |
+| `/mnt/us/kindle-dashboard.conf`      | Removable Upstart job source.                                                 |
+| `/etc/upstart/kindle-dashboard.conf` | Upstart job invoked after framework readiness.                                |
 
 Installer only replaces `/etc/upstart/kindle-dashboard.conf` if existing file
 belongs to Kindle Dashboard. Unknown job at same path fails installation instead
@@ -119,13 +119,13 @@ never moved into place.
 
 Diagnostics reports:
 
-| Field | Meaning |
-| --- | --- |
+| Field     | Meaning                                           |
+| --------- | ------------------------------------------------- |
 | Autostart | Kindle Dashboard Upstart job installed or missing |
-| Enabled | disabled marker absent or present |
-| Upstart | `initctl` job state |
-| Loop | managed fetch process state |
-| R2 image | `IMAGE_URL` curl reachability |
+| Enabled   | disabled marker absent or present                 |
+| Upstart   | `initctl` job state                               |
+| Loop      | managed fetch process state                       |
+| R2 image  | `IMAGE_URL` curl reachability                     |
 
 R2 image status runs:
 

@@ -3,12 +3,15 @@
 // Fetch OpenRouter account usage and emit a Kindle-sized SVG.
 // Credentials stay in the caller environment; never print them.
 
-const fs = require('node:fs');
+const fs = require("node:fs");
 
 const apiKey = process.env.OPENROUTER_API_KEY;
-const output = process.env.DASHBOARD_SVG || 'out/openrouter-dashboard.svg';
-const analyticsUrl = process.env.OPENROUTER_ANALYTICS_URL || 'https://openrouter.ai/api/v1/analytics/query';
-const creditsUrl = process.env.OPENROUTER_CREDITS_URL || 'https://openrouter.ai/api/v1/credits';
+const output = process.env.DASHBOARD_SVG || "out/openrouter-dashboard.svg";
+const analyticsUrl =
+  process.env.OPENROUTER_ANALYTICS_URL ||
+  "https://openrouter.ai/api/v1/analytics/query";
+const creditsUrl =
+  process.env.OPENROUTER_CREDITS_URL || "https://openrouter.ai/api/v1/credits";
 const width = 1072;
 const height = 1448;
 
@@ -19,19 +22,21 @@ function number(value) {
 
 function esc(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function money(value) {
-  return value == null ? '—' : `$${value.toFixed(2)}`;
+  return value == null ? "—" : `$${value.toFixed(2)}`;
 }
 
 function row(label, value, y) {
-  return `<text x="72" y="${y}" class="label">${esc(label)}</text>` +
-    `<text x="1000" y="${y}" text-anchor="end" class="value">${esc(value)}</text>`;
+  return (
+    `<text x="72" y="${y}" class="label">${esc(label)}</text>` +
+    `<text x="1000" y="${y}" text-anchor="end" class="value">${esc(value)}</text>`
+  );
 }
 
 function renderSvg(data, now = new Date()) {
@@ -54,14 +59,14 @@ function renderSvg(data, now = new Date()) {
   <text x="72" y="108" class="title">OPENROUTER</text>
   <line x1="72" y1="140" x2="1000" y2="140" stroke="black" stroke-width="6"/>
   <text x="72" y="205" class="subtitle">Usage snapshot</text>
-  <text x="1000" y="205" text-anchor="end" class="subtitle">${esc(now.toISOString().slice(0, 16).replace('T', ' '))} UTC</text>
+  <text x="1000" y="205" text-anchor="end" class="subtitle">${esc(now.toISOString().slice(0, 16).replace("T", " "))} UTC</text>
   <text x="72" y="300" class="heading">SPEND</text>
-  ${row('Today', money(daily), 380)}
-  ${row('This week', money(weekly), 450)}
-  ${row('This month', money(monthly), 520)}
+  ${row("Today", money(daily), 380)}
+  ${row("This week", money(weekly), 450)}
+  ${row("This month", money(monthly), 520)}
   <line x1="72" y1="570" x2="1000" y2="570" stroke="black" stroke-width="3"/>
   <text x="72" y="650" class="heading">LIMIT</text>
-  ${row('Remaining', money(remaining), 730)}
+  ${row("Remaining", money(remaining), 730)}
   <text x="72" y="830" class="heading">STATUS</text>
   <text x="72" y="910" class="label">Last successful update</text>
   <text x="72" y="970" class="small">OpenRouter account analytics</text>
@@ -71,7 +76,9 @@ function renderSvg(data, now = new Date()) {
 }
 
 function utcPeriodStarts(now) {
-  const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
   const week = new Date(day);
   week.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
 
@@ -94,17 +101,18 @@ async function fetchJson(url, key, options = {}) {
   if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}`);
 
   const payload = await response.json();
-  if (!payload || typeof payload !== 'object') throw new Error('OpenRouter returned invalid data');
+  if (!payload || typeof payload !== "object")
+    throw new Error("OpenRouter returned invalid data");
 
   return payload;
 }
 
 async function fetchPeriodUsage(key, start, end, urls) {
   const payload = await fetchJson(urls.analytics, key, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      metrics: ['total_usage'],
+      metrics: ["total_usage"],
       time_range: {
         start: start.toISOString(),
         end: end.toISOString(),
@@ -113,8 +121,13 @@ async function fetchPeriodUsage(key, start, end, urls) {
   });
   const result = payload.data;
   const usage = number(result?.data?.[0]?.total_usage);
-  if (!result || !Array.isArray(result.data) || result.metadata?.truncated || usage == null) {
-    throw new Error('OpenRouter returned invalid analytics data');
+  if (
+    !result ||
+    !Array.isArray(result.data) ||
+    result.metadata?.truncated ||
+    usage == null
+  ) {
+    throw new Error("OpenRouter returned invalid analytics data");
   }
 
   return usage;
@@ -124,12 +137,17 @@ async function fetchRemainingCredits(key, urls) {
   const payload = await fetchJson(urls.credits, key);
   const credits = number(payload.data?.total_credits);
   const usage = number(payload.data?.total_usage);
-  if (credits == null || usage == null) throw new Error('OpenRouter returned invalid credits data');
+  if (credits == null || usage == null)
+    throw new Error("OpenRouter returned invalid credits data");
 
   return credits - usage;
 }
 
-async function fetchUsage(key, now = new Date(), urls = { analytics: analyticsUrl, credits: creditsUrl }) {
+async function fetchUsage(
+  key,
+  now = new Date(),
+  urls = { analytics: analyticsUrl, credits: creditsUrl },
+) {
   const starts = utcPeriodStarts(now);
   const [daily, weekly, monthly, remaining] = await Promise.all([
     fetchPeriodUsage(key, starts.day, now, urls),
@@ -148,14 +166,14 @@ async function fetchUsage(key, now = new Date(), urls = { analytics: analyticsUr
 
 async function main() {
   if (!apiKey) {
-    console.error('OPENROUTER_API_KEY is required');
+    console.error("OPENROUTER_API_KEY is required");
     process.exit(2);
   }
   const data = await fetchUsage(apiKey);
   const svg = renderSvg(data);
 
-  fs.mkdirSync(require('node:path').dirname(output), { recursive: true });
-  fs.writeFileSync(output, svg, 'utf8');
+  fs.mkdirSync(require("node:path").dirname(output), { recursive: true });
+  fs.writeFileSync(output, svg, "utf8");
 }
 
 if (require.main === module) {

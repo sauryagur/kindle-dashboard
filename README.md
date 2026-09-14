@@ -60,16 +60,16 @@ would eventually fail. Do not put credentials in the image URL.
 
 Open **Kindle** and enter:
 
-| Field | Value |
-| --- | --- |
-| Kindle IP | `<KINDLE_IP>` |
-| SSH Port | usually `22` |
-| SSH User | `<SSH_USER>` |
-| SSH Password | `<SSH_PASSWORD>` |
-| R2 image URL | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png` |
-| Fetch interval | `21600` seconds by default |
-| Full refresh | `1` by default |
-| Wi-Fi retry | `3` consecutive failures |
+| Field          | Value                                               |
+| -------------- | --------------------------------------------------- |
+| Kindle IP      | `<KINDLE_IP>`                                       |
+| SSH Port       | usually `22`                                        |
+| SSH User       | `<SSH_USER>`                                        |
+| SSH Password   | `<SSH_PASSWORD>`                                    |
+| R2 image URL   | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png` |
+| Fetch interval | `21600` seconds by default                          |
+| Full refresh   | `1` by default                                      |
+| Wi-Fi retry    | `3` consecutive failures                            |
 
 Then:
 

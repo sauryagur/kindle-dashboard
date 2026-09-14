@@ -1,9 +1,9 @@
-import type { DashboardApi } from '../shared/types'
+import type { DashboardApi } from "../shared/types";
 
 declare global {
   interface Window {
-    dashboard: DashboardApi
+    dashboard: DashboardApi;
   }
 }
 
-export {}
+export {};

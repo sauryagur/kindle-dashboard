@@ -1,6 +1,9 @@
-export function positiveInt(value: string | undefined, fallback: number): number {
-  const parsed = Number.parseInt(value ?? '', 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+export function positiveInt(
+  value: string | undefined,
+  fallback: number,
+): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export const REPO_URL = 'https://github.com/alexishida/kindle-dashboard'
+export const REPO_URL = "https://github.com/alexishida/kindle-dashboard";

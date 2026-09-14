@@ -3,15 +3,15 @@ import type {
   DashboardConfigInput,
   LanguagePreference,
   SupportedLanguage,
-} from '../../../shared/types'
-import type { ConfigForm } from '../types'
+} from "../../../shared/types";
+import type { ConfigForm } from "../types";
 
 export function resolveLanguage(
   preference: LanguagePreference | undefined,
   systemLanguage: SupportedLanguage | undefined,
 ): SupportedLanguage {
-  if (preference && preference !== 'system') return preference
-  return systemLanguage ?? 'en'
+  if (preference && preference !== "system") return preference;
+  return systemLanguage ?? "en";
 }
 
 export function formFromConfig(config: DashboardConfig): ConfigForm {
@@ -19,12 +19,12 @@ export function formFromConfig(config: DashboardConfig): ConfigForm {
     imageUrl: config.imageUrl,
     kindleFullRefreshEvery: String(config.kindleFullRefreshEvery),
     kindleIp: config.kindleIp,
-    kindlePassword: '',
+    kindlePassword: "",
     kindlePort: String(config.kindlePort),
     kindleRefreshInterval: String(config.kindleRefreshInterval),
     kindleUser: config.kindleUser,
     kindleWifiRetryEvery: String(config.kindleWifiRetryEvery),
-  }
+  };
 }
 
 export function inputFromForm(form: ConfigForm): DashboardConfigInput {
@@ -37,5 +37,5 @@ export function inputFromForm(form: ConfigForm): DashboardConfigInput {
     kindleRefreshInterval: Number.parseInt(form.kindleRefreshInterval, 10),
     kindleUser: form.kindleUser,
     kindleWifiRetryEvery: Number.parseInt(form.kindleWifiRetryEvery, 10),
-  }
+  };
 }

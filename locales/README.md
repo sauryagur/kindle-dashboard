@@ -16,10 +16,10 @@ directory and the app discovers it automatically.
 
 ## Namespaces
 
-| Key | Where it shows |
-| --- | --- |
-| `meta` | Language metadata (`name`) |
-| `ui` | Electron Kindle controller interface |
+| Key    | Where it shows                                 |
+| ------ | ---------------------------------------------- |
+| `meta` | Language metadata (`name`)                     |
+| `ui`   | Electron Kindle controller interface           |
 | `main` | Tray labels and main-process validation/errors |
 
 Missing keys fall back to `en.json`.

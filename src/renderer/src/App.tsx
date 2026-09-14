@@ -1,163 +1,199 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createTranslator } from './i18n'
-import { formFromConfig, inputFromForm, resolveLanguage } from './lib/format'
-import type { ConfigForm, KindleScriptAction, KindleTab, NavItem, NavKey } from './types'
-import { KindleView } from './views/KindleView'
-import { SettingsView } from './views/SettingsView'
-import { Sidebar } from './views/Sidebar'
-import { Topbar } from './views/Topbar'
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createTranslator } from "./i18n";
+import { formFromConfig, inputFromForm, resolveLanguage } from "./lib/format";
+import type {
+  ConfigForm,
+  KindleScriptAction,
+  KindleTab,
+  NavItem,
+  NavKey,
+} from "./types";
+import { KindleView } from "./views/KindleView";
+import { SettingsView } from "./views/SettingsView";
+import { Sidebar } from "./views/Sidebar";
+import { Topbar } from "./views/Topbar";
 import type {
   AppInfo,
   DashboardConfig,
   KindleScriptStatus,
   KindleStatus,
   LanguagePreference,
-} from '../../shared/types'
+} from "../../shared/types";
 
 export default function App(): React.JSX.Element {
-  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
-  const [config, setConfig] = useState<DashboardConfig | null>(null)
-  const [form, setForm] = useState<ConfigForm | null>(null)
-  const [kindle, setKindle] = useState<KindleStatus | null>(null)
-  const [kindleScript, setKindleScript] = useState<KindleScriptStatus | null>(null)
-  const [nav, setNav] = useState<NavKey>('kindle')
-  const [kindleTab, setKindleTab] = useState<KindleTab>('config')
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [checkingKindle, setCheckingKindle] = useState(false)
-  const [installing, setInstalling] = useState(false)
-  const [uninstalling, setUninstalling] = useState(false)
-  const [scriptAction, setScriptAction] = useState<KindleScriptAction | null>(null)
-  const [installOutput, setInstallOutput] = useState<string | null>(null)
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
+  const [config, setConfig] = useState<DashboardConfig | null>(null);
+  const [form, setForm] = useState<ConfigForm | null>(null);
+  const [kindle, setKindle] = useState<KindleStatus | null>(null);
+  const [kindleScript, setKindleScript] = useState<KindleScriptStatus | null>(
+    null,
+  );
+  const [nav, setNav] = useState<NavKey>("kindle");
+  const [kindleTab, setKindleTab] = useState<KindleTab>("config");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [checkingKindle, setCheckingKindle] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [uninstalling, setUninstalling] = useState(false);
+  const [scriptAction, setScriptAction] = useState<KindleScriptAction | null>(
+    null,
+  );
+  const [installOutput, setInstallOutput] = useState<string | null>(null);
 
-  const language = resolveLanguage(config?.language, appInfo?.systemLanguage)
-  const t = useMemo(() => createTranslator(language), [language])
-  const configured = Boolean(config?.setupComplete)
-  const navItems = useMemo<NavItem[]>(() => [
-    { key: 'kindle', label: t('navKindle'), hint: t('navKindleHint'), icon: 'kindle' },
-    { key: 'configuracoes', label: t('navSettings'), hint: t('navSettingsHint'), icon: 'settings' },
-  ], [t])
-  const activeNav = navItems.find((item) => item.key === nav) ?? navItems[0]
+  const language = resolveLanguage(config?.language, appInfo?.systemLanguage);
+  const t = useMemo(() => createTranslator(language), [language]);
+  const configured = Boolean(config?.setupComplete);
+  const navItems = useMemo<NavItem[]>(
+    () => [
+      {
+        key: "kindle",
+        label: t("navKindle"),
+        hint: t("navKindleHint"),
+        icon: "kindle",
+      },
+      {
+        key: "configuracoes",
+        label: t("navSettings"),
+        hint: t("navSettingsHint"),
+        icon: "settings",
+      },
+    ],
+    [t],
+  );
+  const activeNav = navItems.find((item) => item.key === nav) ?? navItems[0];
 
   const applyConfig = useCallback((next: DashboardConfig) => {
-    setConfig(next)
-    setForm(formFromConfig(next))
-  }, [])
+    setConfig(next);
+    setForm(formFromConfig(next));
+  }, []);
 
   const showError = useCallback((message: unknown) => {
-    setError(message instanceof Error ? message.message : String(message))
-  }, [])
+    setError(message instanceof Error ? message.message : String(message));
+  }, []);
 
   const refreshScriptStatus = useCallback(async () => {
-    const status = await window.dashboard.getKindleScriptStatus()
-    setKindleScript(status)
-    return status
-  }, [])
+    const status = await window.dashboard.getKindleScriptStatus();
+    setKindleScript(status);
+    return status;
+  }, []);
 
   useEffect(() => {
-    let active = true
-    void Promise.all([window.dashboard.getAppInfo(), window.dashboard.getConfig()])
+    let active = true;
+    void Promise.all([
+      window.dashboard.getAppInfo(),
+      window.dashboard.getConfig(),
+    ])
       .then(([info, saved]) => {
-        if (!active) return
-        setAppInfo(info)
-        applyConfig(saved)
+        if (!active) return;
+        setAppInfo(info);
+        applyConfig(saved);
       })
-      .catch(showError)
+      .catch(showError);
     const offKindle = window.dashboard.onOpenKindle(() => {
-      setNav('kindle')
-      setKindleTab('config')
-    })
-    const offSettings = window.dashboard.onOpenSettings(() => setNav('configuracoes'))
+      setNav("kindle");
+      setKindleTab("config");
+    });
+    const offSettings = window.dashboard.onOpenSettings(() =>
+      setNav("configuracoes"),
+    );
     return () => {
-      active = false
-      offKindle()
-      offSettings()
-    }
-  }, [applyConfig, showError])
+      active = false;
+      offKindle();
+      offSettings();
+    };
+  }, [applyConfig, showError]);
 
   const updateForm = useCallback((key: keyof ConfigForm, value: string) => {
-    setForm((current) => current ? { ...current, [key]: value } : current)
-  }, [])
+    setForm((current) => (current ? { ...current, [key]: value } : current));
+  }, []);
 
   const save = useCallback(async () => {
-    if (!form) return
-    setSaving(true)
-    setError(null)
+    if (!form) return;
+    setSaving(true);
+    setError(null);
     try {
-      applyConfig(await window.dashboard.saveConfig(inputFromForm(form)))
+      applyConfig(await window.dashboard.saveConfig(inputFromForm(form)));
     } catch (saveError) {
-      showError(saveError)
+      showError(saveError);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }, [applyConfig, form, showError])
+  }, [applyConfig, form, showError]);
 
   const check = useCallback(async () => {
-    setCheckingKindle(true)
-    setError(null)
+    setCheckingKindle(true);
+    setError(null);
     try {
-      setKindle(await window.dashboard.checkKindle())
-      await refreshScriptStatus().catch(() => undefined)
+      setKindle(await window.dashboard.checkKindle());
+      await refreshScriptStatus().catch(() => undefined);
     } catch (checkError) {
-      showError(checkError)
+      showError(checkError);
     } finally {
-      setCheckingKindle(false)
+      setCheckingKindle(false);
     }
-  }, [refreshScriptStatus, showError])
+  }, [refreshScriptStatus, showError]);
 
   const install = useCallback(async () => {
-    setInstalling(true)
-    setError(null)
+    setInstalling(true);
+    setError(null);
     try {
-      const result = await window.dashboard.installKindle()
-      applyConfig(result.config)
-      setInstallOutput(result.output)
-      setKindleScript(result.status)
-      setKindleTab('diagnostico')
+      const result = await window.dashboard.installKindle();
+      applyConfig(result.config);
+      setInstallOutput(result.output);
+      setKindleScript(result.status);
+      setKindleTab("diagnostico");
     } catch (installError) {
-      showError(installError)
+      showError(installError);
     } finally {
-      setInstalling(false)
+      setInstalling(false);
     }
-  }, [applyConfig, showError])
+  }, [applyConfig, showError]);
 
   const uninstall = useCallback(async () => {
-    setUninstalling(true)
-    setError(null)
+    setUninstalling(true);
+    setError(null);
     try {
-      const result = await window.dashboard.uninstallKindle()
-      applyConfig(result.config)
-      setInstallOutput(result.output)
-      setKindleScript(result.status)
+      const result = await window.dashboard.uninstallKindle();
+      applyConfig(result.config);
+      setInstallOutput(result.output);
+      setKindleScript(result.status);
     } catch (uninstallError) {
-      showError(uninstallError)
+      showError(uninstallError);
     } finally {
-      setUninstalling(false)
+      setUninstalling(false);
     }
-  }, [applyConfig, showError])
+  }, [applyConfig, showError]);
 
-  const manageScript = useCallback(async (action: KindleScriptAction) => {
-    setScriptAction(action)
-    setError(null)
-    try {
-      setKindleScript(action === 'start'
-        ? await window.dashboard.startKindleScript()
-        : await window.dashboard.stopKindleScript())
-    } catch (scriptError) {
-      showError(scriptError)
-    } finally {
-      setScriptAction(null)
-    }
-  }, [showError])
+  const manageScript = useCallback(
+    async (action: KindleScriptAction) => {
+      setScriptAction(action);
+      setError(null);
+      try {
+        setKindleScript(
+          action === "start"
+            ? await window.dashboard.startKindleScript()
+            : await window.dashboard.stopKindleScript(),
+        );
+      } catch (scriptError) {
+        showError(scriptError);
+      } finally {
+        setScriptAction(null);
+      }
+    },
+    [showError],
+  );
 
-  const setLanguage = useCallback(async (preference: LanguagePreference) => {
-    setError(null)
-    try {
-      applyConfig(await window.dashboard.setLanguage(preference))
-    } catch (languageError) {
-      showError(languageError)
-    }
-  }, [applyConfig, showError])
+  const setLanguage = useCallback(
+    async (preference: LanguagePreference) => {
+      setError(null);
+      try {
+        applyConfig(await window.dashboard.setLanguage(preference));
+      } catch (languageError) {
+        showError(languageError);
+      }
+    },
+    [applyConfig, showError],
+  );
 
   return (
     <div className="app-shell">
@@ -173,7 +209,7 @@ export default function App(): React.JSX.Element {
       <main className="content">
         <Topbar activeNav={activeNav} />
         {error ? <p className="error-banner">{error}</p> : null}
-        {nav === 'kindle' ? (
+        {nav === "kindle" ? (
           <KindleView
             checkingKindle={checkingKindle}
             config={config}
@@ -199,7 +235,7 @@ export default function App(): React.JSX.Element {
         ) : (
           <SettingsView
             disabled={!config}
-            languagePreference={config?.language ?? 'system'}
+            languagePreference={config?.language ?? "system"}
             onChangeLanguage={(preference) => void setLanguage(preference)}
             systemLanguage={appInfo?.systemLanguage}
             t={t}
@@ -207,5 +243,5 @@ export default function App(): React.JSX.Element {
         )}
       </main>
     </div>
-  )
+  );
 }
