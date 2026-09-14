@@ -28,10 +28,10 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           DASHBOARD_SVG: out/openrouter-dashboard.svg
         run: node scripts/generate-openrouter-dashboard.js
-      - name: Convert SVG to PNG
-        run: convert -background white out/openrouter-dashboard.svg -strip out/openrouter-dashboard.png
+      - name: Convert and rotate SVG for portrait Kindle
+        run: convert -background white out/openrouter-dashboard.svg -rotate 90 -strip out/openrouter-dashboard.png
       - name: Verify image dimensions
-        run: test "$(identify -format '%wx%h' out/openrouter-dashboard.png)" = '1448x1072'
+        run: test "$(identify -format '%wx%h' out/openrouter-dashboard.png)" = '1072x1448'
       - name: Publish to Cloudflare R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
