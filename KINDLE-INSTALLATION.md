@@ -117,13 +117,13 @@ never moved into place.
 
 ## Manual Disable and Re-enable
 
-On Kindle, disable immediately and persistently with:
+On Kindle, disable persistently with:
 
 ```sh
 touch /mnt/us/dash-autostart.disabled
 ```
 
-The active loop sees this marker, exits, and does not restart after reboot.
+The active loop checks this marker within 60 seconds, exits, and does not restart after reboot.
 Re-enable and start a fetch immediately with:
 
 ```sh

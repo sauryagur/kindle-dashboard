@@ -48,6 +48,19 @@ reconnect_wifi() {
   sleep 8
 }
 
+wait_for_next_fetch() {
+  remaining=$INTERVAL
+  while [ "$remaining" -gt 0 ] && [ ! -f "$STOP" ] && [ ! -f "$DISABLED" ]; do
+    if [ "$remaining" -gt 60 ]; then
+      sleep 60
+      remaining=$((remaining - 60))
+    else
+      sleep "$remaining"
+      remaining=0
+    fi
+  done
+}
+
 rm -f "$STOP"
 i=0
 failures=0
@@ -79,7 +92,7 @@ while [ ! -f "$STOP" ] && [ ! -f "$DISABLED" ]; do
   fi
 
   i=$((i + 1))
-  sleep "$INTERVAL"
+  wait_for_next_fetch
 done
 
 if [ -f "$DISABLED" ]; then
