@@ -48,7 +48,7 @@ Open **Kindle** and set:
 | SSH User       | `<SSH_USER>`                                           |
 | SSH Password   | `<SSH_PASSWORD>`                                       |
 | R2 image URL   | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png`    |
-| Fetch interval | seconds between fetches; default `21600`               |
+| Fetch interval | seconds between fetches; default `7200` (2 hours)               |
 | Full refresh   | successful fetches between full refreshes; default `1` |
 | Wi-Fi retry    | consecutive failures before recovery; default `3`      |
 
@@ -78,7 +78,7 @@ of being overwritten. It remounts root `rw`, copies job, then returns root to
 
 ```sh
 IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png'
-INTERVAL='21600'
+INTERVAL='7200'
 FULL_EVERY='1'
 WIFI_RETRY_EVERY='3'
 ```
@@ -114,6 +114,21 @@ Upstart runs `/mnt/us/dash-autostart.sh` after framework readiness. Launcher:
 
 Existing displayed `dash.png` survives a failed fetch because temporary file is
 never moved into place.
+
+## Manual Disable and Re-enable
+
+On Kindle, disable immediately and persistently with:
+
+```sh
+touch /mnt/us/dash-autostart.disabled
+```
+
+The active loop sees this marker, exits, and does not restart after reboot.
+Re-enable and start a fetch immediately with:
+
+```sh
+rm /mnt/us/dash-autostart.disabled && /mnt/us/dash-autostart.sh
+```
 
 ## Status, Start, Stop
 
@@ -157,3 +172,6 @@ USBNetwork, or Hotfix files through this project.
 Do not document or commit real Kindle serial numbers, IP addresses, usernames,
 SSH passwords, R2 credentials, OpenRouter keys, or private logs. Use
 `<KINDLE_IP>`, `<SSH_USER>`, `<SSH_PASSWORD>`, and `<R2_PUBLIC_HOST>`.
+
+
+Wall time: 0.04 seconds

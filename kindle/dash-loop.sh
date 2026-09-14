@@ -3,20 +3,22 @@
 # Downloads a stable HTTPS image and displays it through FBInk.
 # Runs on device; survives SSH disconnects.
 #
-# Parar:  touch /mnt/us/dash-loop.stop   (ou matar o processo)
-# Log:    /mnt/us/dash-loop.log
+# Desativar: touch /mnt/us/dash-autostart.disabled
+# Reativar:  rm /mnt/us/dash-autostart.disabled && /mnt/us/dash-autostart.sh
+# Log:       /mnt/us/dash-loop.log
 
 IMAGE_URL="${IMAGE_URL:-}"
 IMG=/mnt/us/dash.png
-INTERVAL="${INTERVAL:-21600}"  # seconds between published-image checks
+INTERVAL="${INTERVAL:-7200}"   # seconds between published-image checks
 FULL_EVERY="${FULL_EVERY:-1}"  # full refresh after every successful update
 WIFI_RETRY_EVERY="${WIFI_RETRY_EVERY:-3}" # recover Wi-Fi after N consecutive failures
 MAX_FAILURES="${MAX_FAILURES:-6}" # para o script após N falhas consecutivas (0 = sem limite)
 STOP=/mnt/us/dash-loop.stop
+DISABLED=/mnt/us/dash-autostart.disabled
 PIDFILE=/mnt/us/dash-loop.pid
 FBINK=/usr/bin/fbink
 
-case "$INTERVAL" in ''|*[!0-9]*) INTERVAL=21600;; esac
+case "$INTERVAL" in ''|*[!0-9]*) INTERVAL=7200;; esac
 case "$FULL_EVERY" in ''|*[!0-9]*|0) FULL_EVERY=1;; esac
 case "$WIFI_RETRY_EVERY" in ''|*[!0-9]*|0) WIFI_RETRY_EVERY=3;; esac
 case "$MAX_FAILURES" in ''|*[!0-9]*) MAX_FAILURES=6;; esac
@@ -51,7 +53,7 @@ i=0
 failures=0
 echo "[dash-loop] start $(date) pid=$$ image=$IMAGE_URL interval=${INTERVAL}s"
 
-while [ ! -f "$STOP" ]; do
+while [ ! -f "$STOP" ] && [ ! -f "$DISABLED" ]; do
   # mantém a tela acesa (powerd reseta às vezes, então reforça todo ciclo)
   lipc-set-prop com.lab126.powerd preventScreenSaver 1 2>/dev/null
 
@@ -80,4 +82,8 @@ while [ ! -f "$STOP" ]; do
   sleep "$INTERVAL"
 done
 
-echo "[dash-loop] parado $(date) (encontrou $STOP)"
+if [ -f "$DISABLED" ]; then
+  echo "[dash-loop] disabled $(date) (found $DISABLED)"
+else
+  echo "[dash-loop] stopped $(date) (found $STOP)"
+fi

@@ -67,7 +67,7 @@ Open **Kindle** and enter:
 | SSH User       | `<SSH_USER>`                                        |
 | SSH Password   | `<SSH_PASSWORD>`                                    |
 | R2 image URL   | `https://<R2_PUBLIC_HOST>/openrouter-dashboard.png` |
-| Fetch interval | `21600` seconds by default                          |
+| Fetch interval | `7200` seconds (2 hours) by default                 |
 | Full refresh   | `1` by default                                      |
 | Wi-Fi retry    | `3` consecutive failures                            |
 
@@ -78,6 +78,18 @@ Then:
 3. Click **Check Kindle** and confirm SSH, jailbreak, FBInk, and Hotfix checks.
 4. Click **Install scripts**.
 5. Confirm loop, autostart, and R2 image availability status.
+
+To disable fetches directly on Kindle, run:
+
+```sh
+touch /mnt/us/dash-autostart.disabled
+```
+
+This stops the active loop and remains disabled across reboot. Re-enable with:
+
+```sh
+rm /mnt/us/dash-autostart.disabled && /mnt/us/dash-autostart.sh
+```
 
 The managed loop starts after Kindle reboot. Use Start or Stop in diagnostics to
 control it without reinstalling. Uninstall removes the Upstart job and all

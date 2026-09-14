@@ -34,7 +34,7 @@ function imageUrl(value = process.env.IMAGE_URL) {
 function environmentContents(env = process.env) {
   return [
     `IMAGE_URL=${shellQuote(imageUrl(env.IMAGE_URL))}`,
-    `INTERVAL=${shellQuote(positiveInt(env.KINDLE_REFRESH_INTERVAL, 21600))}`,
+    `INTERVAL=${shellQuote(positiveInt(env.KINDLE_REFRESH_INTERVAL, 7200))}`,
     `FULL_EVERY=${shellQuote(positiveInt(env.KINDLE_FULL_REFRESH_EVERY, 1))}`,
     `WIFI_RETRY_EVERY=${shellQuote(positiveInt(env.KINDLE_WIFI_RETRY_EVERY, 3))}`,
     "",

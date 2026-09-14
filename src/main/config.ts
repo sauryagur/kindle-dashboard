@@ -38,7 +38,7 @@ function defaultStoredConfig(): StoredDashboardConfig {
     kindleFullRefreshEvery: 1,
     kindleIp: "",
     kindlePort: 22,
-    kindleRefreshInterval: 21600,
+    kindleRefreshInterval: 7200,
     kindleUser: "",
     kindleWifiRetryEvery: 3,
     setupComplete: false,
