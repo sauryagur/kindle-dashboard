@@ -48,10 +48,10 @@ SpiderCat scriptlet to run `/mnt/us/dash-autostart.sh`.
 
 ### Install
 
-From repository root, run one command with fixed public image URL:
+From repository root, provide public R2 host without scheme and image object path:
 
 ```sh
-IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' sh scripts/install-spidercat.sh
+R2_PUBLIC_HOST='your-public-host.example' IMAGE_PATH='openrouter-dashboard.png' sh scripts/install-spidercat.sh
 ```
 
 `scripts/install-spidercat.sh` locates mounted `/media/$USER/Kindle`; it
@@ -59,12 +59,14 @@ also checks `/run/media/$USER/Kindle`. For nonstandard mount location, supply
 an explicit override:
 
 ```sh
-KINDLE_DIR=/path/to/Kindle IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' \
-  sh scripts/install-spidercat.sh
+KINDLE_DIR=/path/to/Kindle R2_PUBLIC_HOST='your-public-host.example' IMAGE_PATH='openrouter-dashboard.png' sh scripts/install-spidercat.sh
 ```
 
-Installer rejects non-HTTPS URLs, writes files atomically, and syncs Kindle
-filesystem. It writes runtime files at Kindle USB root:
+Installer requires a host without scheme/path and an object path using URL-safe
+characters. It validates source files, target mount and write access, writes
+each file atomically, removes partial files after failure, and syncs storage.
+
+It writes runtime files at Kindle USB root:
 
 - `/mnt/us/dash-loop.sh`;
 - `/mnt/us/dash-autostart.sh`;
@@ -85,9 +87,12 @@ launcher calls runtime scripts through `/bin/sh`.
 
 Safely eject Kindle, unplug USB, connect Wi-Fi, and open **Kindle Dashboard
 Start** in library. `dash-autostart.sh` waits up to 90 seconds for Wi-Fi, then
-starts loop; first image request occurs immediately. Confirm image and logs at
-`/mnt/us/dash-autostart.log` and `/mnt/us/dash-loop.log` through USB or
-terminal.
+starts loop; first image request occurs immediately.
+
+Start and Stop append timestamped status and shell trace output to
+`/mnt/us/kindle-dashboard-scriptlets.log`. Read it through USB after
+reconnecting Kindle. Fetch lifecycle logs remain separate at
+`/mnt/us/dash-autostart.log` and `/mnt/us/dash-loop.log`.
 
 ### SpiderCat Limits
 

@@ -70,7 +70,7 @@ change.
 From repository root, install everything with one command:
 
 ```sh
-IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' sh scripts/install-spidercat.sh
+R2_PUBLIC_HOST='your-public-host.example' IMAGE_PATH='openrouter-dashboard.png' sh scripts/install-spidercat.sh
 ```
 
 It locates mounted `/media/$USER/Kindle` automatically. Use
