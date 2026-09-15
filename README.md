@@ -67,6 +67,15 @@ not publish a KPM package, so `;kpm launch kindle-dashboard` is not valid.
 Use documented scriptlet path instead. It needs neither SSH nor Upstart rootfs
 change.
 
+From repository root, install everything with one command:
+
+```sh
+IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' sh scripts/install-spidercat.sh
+```
+
+It locates mounted `/media/$USER/Kindle` automatically. Use
+`KINDLE_DIR=/path/to/Kindle` only for nonstandard mounts.
+
 Follow [SpiderCat installation](https://kindlemodding.org/jailbreaking/SpiderCat/)
 and verify that a `.sh` file placed in `documents` appears in Kindle library.
 Then follow USB procedure in

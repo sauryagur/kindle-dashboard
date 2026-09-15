@@ -46,62 +46,42 @@ Repository ships loose scripts, not `.kpkg` artifact or KPM repository. Do not
 run `;kpm launch kindle-dashboard`: KPM has no such installed package. Use
 SpiderCat scriptlet to run `/mnt/us/dash-autostart.sh`.
 
-### Copy Files Over USB
+### Install
 
-Mount Kindle USB storage, set its mount path, then copy scripts and write cloud
-configuration. Replace placeholder URL with fixed public R2 URL. Do not use
-presigned URL or put R2 credentials on Kindle.
+From repository root, run one command with fixed public image URL:
 
 ```sh
-KINDLE=/media/$USER/Kindle  # replace if mounted elsewhere
-
-cp kindle/dash-loop.sh "$KINDLE/dash-loop.sh"
-cp kindle/dash-autostart.sh "$KINDLE/dash-autostart.sh"
-cat > "$KINDLE/dash-autostart.env" <<'EOF'
-IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png'
-INTERVAL='7200'
-FULL_EVERY='1'
-WIFI_RETRY_EVERY='3'
-EOF
+IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' sh scripts/install-spidercat.sh
 ```
+
+`scripts/install-spidercat.sh` locates mounted `/media/$USER/Kindle`; it
+also checks `/run/media/$USER/Kindle`. For nonstandard mount location, supply
+an explicit override:
+
+```sh
+KINDLE_DIR=/path/to/Kindle IMAGE_URL='https://<R2_PUBLIC_HOST>/openrouter-dashboard.png' \
+  sh scripts/install-spidercat.sh
+```
+
+Installer rejects non-HTTPS URLs, writes files atomically, and syncs Kindle
+filesystem. It writes runtime files at Kindle USB root:
+
+- `/mnt/us/dash-loop.sh`;
+- `/mnt/us/dash-autostart.sh`;
+- `/mnt/us/dash-autostart.env`.
+
+It writes only SpiderCat home-screen launcher scriptlets in `documents`:
+
+- `/mnt/us/documents/kindle-dashboard-start.sh`;
+- `/mnt/us/documents/kindle-dashboard-stop.sh`.
+
+Runtime files must remain at Kindle USB root. Current launcher scriptlet invokes
+`/mnt/us/dash-autostart.sh`, which in turn invokes `/mnt/us/dash-loop.sh`.
+Putting all scripts in `documents` would make Start fail.
 
 USB storage is FAT, so it does not preserve Unix executable bits. Safe here:
-launcher calls scripts through `/bin/sh`.
+launcher calls runtime scripts through `/bin/sh`.
 
-### Add Home-Screen Scriptlets
-
-Create start scriptlet in Kindle `documents` folder. SH_Integration indexes
-it as **Kindle Dashboard Start** after safely ejecting and disconnecting USB.
-
-```sh
-mkdir -p "$KINDLE/documents"
-cat > "$KINDLE/documents/kindle-dashboard-start.sh" <<'EOF'
-#!/bin/sh
-# Name: Kindle Dashboard Start
-# Author: Kindle Dashboard
-# DontUseFBInk
-
-rm -f /mnt/us/dash-autostart.disabled /mnt/us/dash-loop.stop
-exec /bin/sh /mnt/us/dash-autostart.sh
-EOF
-```
-
-Optional stop scriptlet stops active loop promptly and prevents restart until
-Start is opened again:
-
-```sh
-cat > "$KINDLE/documents/kindle-dashboard-stop.sh" <<'EOF'
-#!/bin/sh
-# Name: Kindle Dashboard Stop
-# Author: Kindle Dashboard
-# DontUseFBInk
-
-touch /mnt/us/dash-autostart.disabled /mnt/us/dash-loop.stop
-PID=$(cat /mnt/us/dash-loop.pid 2>/dev/null)
-[ -n "$PID" ] && kill "$PID" 2>/dev/null || true
-EOF
-sync -f "$KINDLE"
-```
 
 Safely eject Kindle, unplug USB, connect Wi-Fi, and open **Kindle Dashboard
 Start** in library. `dash-autostart.sh` waits up to 90 seconds for Wi-Fi, then
