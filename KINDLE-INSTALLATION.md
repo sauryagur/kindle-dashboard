@@ -89,7 +89,7 @@ Safely eject Kindle, unplug USB, connect Wi-Fi, and open **Kindle Dashboard
 Start** in library. `dash-autostart.sh` waits up to 90 seconds for Wi-Fi, then
 starts loop; first image request occurs immediately.
 
-Start and Stop append timestamped status and shell trace output to
+Start and Stop append timestamped action, status, and captured command output to
 `/mnt/us/kindle-dashboard-scriptlets.log`. Read it through USB after
 reconnecting Kindle. Fetch lifecycle logs remain separate at
 `/mnt/us/dash-autostart.log` and `/mnt/us/dash-loop.log`.

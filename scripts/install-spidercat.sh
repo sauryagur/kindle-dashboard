@@ -131,8 +131,6 @@ LOG=/mnt/us/kindle-dashboard-scriptlets.log
 AUTOSTART=/mnt/us/dash-autostart.sh
 
 exec >> "$LOG" 2>&1
-PS4='+$(date "+%Y-%m-%dT%H:%M:%S%z") [kindle-dashboard:start] '
-set -x
 
 log() {
   printf '%s [kindle-dashboard:start] %s\n' "$(date "+%Y-%m-%dT%H:%M:%S%z")" "$*"
@@ -173,8 +171,6 @@ STOP=/mnt/us/dash-loop.stop
 PIDFILE=/mnt/us/dash-loop.pid
 
 exec >> "$LOG" 2>&1
-PS4='+$(date "+%Y-%m-%dT%H:%M:%S%z") [kindle-dashboard:stop] '
-set -x
 
 log() {
   printf '%s [kindle-dashboard:stop] %s\n' "$(date "+%Y-%m-%dT%H:%M:%S%z")" "$*"
