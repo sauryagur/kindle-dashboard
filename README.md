@@ -2,7 +2,7 @@
 
 GitHub Actions publishes an OpenRouter usage PNG to a fixed Cloudflare R2 object.
 A jailbroken Kindle fetches that public HTTPS image directly over Wi-Fi. Electron
-is only the SSH controller used to configure, diagnose, and manage Kindle-side
+is optional SSH controller for configuration, diagnosis, and compatible Upstart
 automation.
 
 This project does not jailbreak Kindle, install FBInk, create an R2 public URL,
@@ -16,9 +16,10 @@ public or custom-domain R2 object URL.
 2. `scripts/generate-openrouter-dashboard.js` queries OpenRouter usage, creates
    `1072x1448` SVG, converts it to PNG, and overwrites
    `openrouter-dashboard.png` in Cloudflare R2.
-3. Electron stores Kindle SSH settings and the stable image URL, then installs a
-   reversible Upstart job.
-4. Kindle waits for Wi-Fi and fetches the image every six hours by default.
+3. Electron can store Kindle SSH settings and install a reversible Upstart job
+   on compatible devices. SpiderCat devices can instead run same scripts from
+   home-screen scriptlet.
+4. Kindle waits for Wi-Fi and fetches image every two hours by default.
 5. Kindle downloads to `/mnt/us/dash.png.tmp`, atomically moves it to
    `/mnt/us/dash.png` only after a non-empty download, and displays it with
    FBInk GC16.
@@ -45,18 +46,38 @@ would eventually fail. Do not put credentials in the image URL.
 ### Kindle
 
 - Jailbreak completed.
-- SSH enabled and reachable from Electron during setup.
 - FBInk installed.
-- `/mnt/us`, `initctl`, `mntroot`, and Hotfix/Upstart at
-  `/etc/upstart/kmc.conf`.
-- Internet/Wi-Fi access to the R2 image URL.
+- Internet/Wi-Fi access to R2 image URL.
+- For USB/manual use: SpiderCat with preinstalled SH_Integration. KPM is
+  available for packages but is not required to run repository loose scripts.
+- For boot-time automation through Electron: SSH plus `/mnt/us`, `initctl`,
+  `mntroot`, and Hotfix/Upstart at `/etc/upstart/kmc.conf`.
 
 ### Electron controller
 
-- Node.js `>=24` for development, or a release installer.
+- Node.js `>=24` for development, or release installer.
 - Network access to Kindle SSH during setup and maintenance.
 
-## First Run
+## SpiderCat: USB and Home-Screen Start
+
+SpiderCat hdnext stack includes KPM and SH_Integration. They are different:
+KPM installs and launches registered packages; SH_Integration indexes `.sh`
+files in `/mnt/us/documents` as home-screen scriptlets. This repository does
+not publish a KPM package, so `;kpm launch kindle-dashboard` is not valid.
+Use documented scriptlet path instead. It needs neither SSH nor Upstart rootfs
+change.
+
+Follow [SpiderCat installation](https://kindlemodding.org/jailbreaking/SpiderCat/)
+and verify that a `.sh` file placed in `documents` appears in Kindle library.
+Then follow USB procedure in
+[Kindle installation](KINDLE-INSTALLATION.md#spidercat-usb-installation-and-manual-start).
+
+This starts fetch immediately when opened, but does **not** survive reboot:
+ordinary KPM package hooks and scriptlets have no documented boot hook. Start it
+again from home screen after each reboot. Use Electron SSH/Upstart path only
+after confirming exact Upstart compatibility is present.
+
+## Electron SSH/Upstart First Run
 
 Open **Kindle** and enter:
 
@@ -91,9 +112,10 @@ This stops the active loop and remains disabled across reboot. Re-enable with:
 rm /mnt/us/dash-autostart.disabled && /mnt/us/dash-autostart.sh
 ```
 
-The managed loop starts after Kindle reboot. Use Start or Stop in diagnostics to
-control it without reinstalling. Uninstall removes the Upstart job and all
-Kindle Dashboard files it installed.
+On device where Electron has successfully installed its Upstart job, managed
+loop starts after Kindle reboot. Use Start or Stop in diagnostics to control it
+without reinstalling. Uninstall removes Upstart job and all Kindle Dashboard
+files it installed.
 
 ![Kindle configuration](screenshot/kindle-config.jpg)
 
@@ -131,8 +153,8 @@ npm run kindle
 npm run kindle:autostart
 ```
 
-The Electron UI is normal setup path. Commands are for support and local
-Kindle diagnostics.
+Electron UI is normal setup path only for compatible Upstart devices. Commands
+support SSH installation and local Kindle diagnostics.
 
 ## Structure
 
